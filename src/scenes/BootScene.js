@@ -12,6 +12,33 @@ export default class BootScene extends Phaser.Scene {
 
         // In this barebone example, we have no boot-specific assets,
         // so we just console log and move on.
+        const progressBox = this.add.graphics();
+        const progressBar = this.add.graphics();
+
+        progressBox.fillStyle(0x222222, 0.8);
+        progressBox.fillRect(240, 270, 320, 50);
+
+        const loadingText = this.add.text(400, 240, 'Loading...', {
+            fontSize: '20px',
+            fill: '#ffffff'
+        }).setOrigin(0.5, 0.5);
+
+        this.load.on('progress', (value) => {
+            progressBar.clear();
+            progressBar.fillStyle(0x39ff14, 1);
+            progressBar.fillRect(250, 280, 300 * value, 30);
+        });
+
+        this.load.on('complete', () => {
+            progressBar.destroy();
+            progressBox.destroy();
+            loadingText.destroy();
+        });
+
+        //200 to see the loading bar
+        for (let i = 0; i < 200; i++) {
+            this.load.image(`dummy${i}`, `https://via.placeholder.com/100x100.png?text=Img${i}`);
+        }
     }
 
     // Create game objects or setup scene
