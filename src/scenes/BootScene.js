@@ -35,9 +35,8 @@ export default class BootScene extends Phaser.Scene {
             loadingText.destroy();
         });
 
-        //200 to see the loading bar
-        for (let i = 0; i < 200; i++) {
-            this.load.image(`dummy${i}`, `https://via.placeholder.com/100x100.png?text=Img${i}`);
+        for (let i = 0; i < 10; i++) {
+            this.load.image(`dummy${i}`, 'assets/dummy.png');
         }
     }
 
