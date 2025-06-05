@@ -1,50 +1,100 @@
 // GameScene.js
 export default class GameScene extends Phaser.Scene {
     constructor() {
-        super({ key: 'GameScene' }); // Assign a unique key
+        super({ key: 'GameScene' });
+        this.gameSpeed = 4;
+        this.score = 0;
     }
 
-    // Load assets for this scene
     preload() {
-        console.log('GameScene: preload()');
-        // Example: Load an image asset
-        // Make sure you have an 'assets' folder with 'logo.png' inside
-        // For this barebone, we'll skip actual asset loading for max simplicity,
-        // or uncomment the line below if you add an assets folder.
-        // this.load.image('phaser_logo', 'assets/images/phaser3-logo.png');
-    }
+        const fruitTypes = ['Mango', 'Banana', 'Cherries', 'Pineapple', 'Pomegranate'];
+        const junkTypes = ['Fries','Burger', 'Hotdog', 'Donuts', 'Icecream','Pizza'];
 
-    // Create game objects and set up the scene
-    create() {
-        console.log('GameScene: create()');
+        this.load.image('background', 'assets/background.png');
 
-        // Add some text to the center of the screen
-        const gameText = this.add.text(this.sys.game.config.width / 2, this.sys.game.config.height / 2, 'Phaser Barebone Running!', {
-            fontSize: '48px',
-            color: '#00ff00' // Green color
-        }).setOrigin(0.5); // Center the text origin
-
-        // Add the loaded image (if you uncommented the preload line and added the asset)
-        // const logo = this.add.image(this.sys.game.config.width / 2, this.sys.game.config.height / 2 - 100, 'phaser_logo');
-        // logo.setOrigin(0.5); // Center the logo origin
-
-        // Add some basic interactive element (example: rotate on pointer down)
-        gameText.setInteractive();
-        gameText.on('pointerdown', () => {
-            gameText.setStyle({ color: '#ff00ff' }); // Change color on click
+        fruitTypes.forEach(fruit => {
+            this.load.image(fruit, `assets/fruits/${fruit}.png`);
         });
 
-        console.log('GameScene: create() complete');
+        junkTypes.forEach(junk => {
+            this.load.image(junk, `assets/junks/${junk}.png`);
+        });
     }
 
-    // Game loop - runs every frame
-    update(time, delta) {
-        // console.log('GameScene: update()', time, delta); // Uncomment for debugging
+    create() {
+        const { width, height } = this.sys.game.config;
 
-        // Example update logic (e.g., move a character, check collisions)
-        // If you had the logo, you could rotate it:
-        // if (this.logo) {
-        //    this.logo.rotation += 0.01;
-        // }
+        // Moving background
+        this.background = this.add.tileSprite(0, 0, 0, 0, 'background')
+        .setOrigin(0, 0)
+        .setScrollFactor(0)
+        .setDepth(-1);
+
+        const bg = this.textures.get('background').getSourceImage();
+        const scaleX = this.sys.game.config.width / bg.width;
+        const scaleY = this.sys.game.config.height / bg.height;
+        this.background.setScale(scaleX, scaleY);
+
+        // Score
+        this.scoreText = this.add.text(16, 16, 'Score: 0', {
+            fontSize: '24px',
+            fill: '#fff',
+            stroke: '#000',
+            strokeThickness: 4
+        });
+
+        // Groups for fruits and junks
+        this.powerUps = this.physics.add.group();
+        this.hazards = this.physics.add.group();
+
+        // Spawn loops
+        this.time.addEvent({
+            delay: Phaser.Math.Between(2000, 4000),
+            callback: this.spawnPowerUp,
+            callbackScope: this,
+            loop: true
+        });
+
+        this.time.addEvent({
+            delay: Phaser.Math.Between(1500, 3500),
+            callback: this.spawnHazard,
+            callbackScope: this,
+            loop: true
+        });
+
+    }
+
+    update() {
+        this.background.tilePositionX += this.gameSpeed;
+
+        this.powerUps.getChildren().forEach(item => {
+            if (item.x < -item.width) item.destroy();
+        });
+
+        this.hazards.getChildren().forEach(hazard => {
+            if (hazard.x < -hazard.width) hazard.destroy();
+        });
+    }
+
+    spawnPowerUp() {
+        const fruitTypes = ['Mango', 'Banana', 'Cherries', 'Pineapple', 'Pomegranate'];
+        const key = Phaser.Utils.Array.GetRandom(fruitTypes);
+        const y = Phaser.Math.Between(200, 400);
+    
+        const item = this.powerUps.create(this.sys.game.config.width + 50, y, key);
+        item.setVelocityX(-this.gameSpeed * 50);
+        item.setDisplaySize(80, 80);
+        item.body.allowGravity = false;
+    }
+    
+    spawnHazard() {
+        const junkTypes = ['Fries','Burger', 'Hotdog', 'Donuts', 'Icecream', 'Pizza'];
+        const key = Phaser.Utils.Array.GetRandom(junkTypes);
+        const y = Phaser.Math.Between(200, 400);
+    
+        const hazard = this.hazards.create(this.sys.game.config.width + 100, y, key);
+        hazard.setVelocityX(-this.gameSpeed * 50);
+        hazard.setDisplaySize(80, 80);
+        hazard.body.allowGravity = false;
     }
 }
