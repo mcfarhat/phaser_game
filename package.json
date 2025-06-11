@@ -1,0 +1,24 @@
+{
+  "name": "phaser-barebone",
+  "version": "1.0.0",
+  "description": "A barebone foundation for a Phaser 3 game project.",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "npx serve .",
+    "serve": "npx serve ."
+  },
+  "keywords": [
+    "phaser",
+    "game",
+    "barebone",
+    "template"
+  ],
+  "author": "Your Name/Team",
+  "license": "MIT",
+  "devDependencies": {
+    "serve": "^14.0.0"
+  },
+  "dependencies": {
+    "phaser": "^3.55.2"
+  }
+}
