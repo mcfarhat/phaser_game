@@ -1,50 +1,144 @@
 // GameScene.js
 export default class GameScene extends Phaser.Scene {
     constructor() {
-        super({ key: 'GameScene' }); // Assign a unique key
+        super({ key: 'GameScene' });
+        this.gameSpeed = 4;
+        this.score = 0;
+        this.lastSpawnedItemX = -Infinity;
+        this.lastSpawnedItemY = -Infinity;
+        this.minDistanceBetweenItems = 150;
+        this.minYDistanceBetweenItems = 120; 
+        this.itemSpawnHeightRange = [150, 300];
     }
 
-    // Load assets for this scene
     preload() {
-        console.log('GameScene: preload()');
-        // Example: Load an image asset
-        // Make sure you have an 'assets' folder with 'logo.png' inside
-        // For this barebone, we'll skip actual asset loading for max simplicity,
-        // or uncomment the line below if you add an assets folder.
-        // this.load.image('phaser_logo', 'assets/images/phaser3-logo.png');
-    }
+        const fruitTypes = ['Avocado','Boiled Egg','Berries','Broccoli','Mango', 'Banana', 'Pineapple', 'Pomegranate', 'Proteinshake'];
+        const junkTypes = ['Candy Bar','Soda','Fries','Burger', 'Hotdog', 'Donuts','Pizza'];
 
-    // Create game objects and set up the scene
-    create() {
-        console.log('GameScene: create()');
+        this.load.image('background', 'assets/background.jpg');
 
-        // Add some text to the center of the screen
-        const gameText = this.add.text(this.sys.game.config.width / 2, this.sys.game.config.height / 2, 'Phaser Barebone Running!', {
-            fontSize: '48px',
-            color: '#00ff00' // Green color
-        }).setOrigin(0.5); // Center the text origin
-
-        // Add the loaded image (if you uncommented the preload line and added the asset)
-        // const logo = this.add.image(this.sys.game.config.width / 2, this.sys.game.config.height / 2 - 100, 'phaser_logo');
-        // logo.setOrigin(0.5); // Center the logo origin
-
-        // Add some basic interactive element (example: rotate on pointer down)
-        gameText.setInteractive();
-        gameText.on('pointerdown', () => {
-            gameText.setStyle({ color: '#ff00ff' }); // Change color on click
+        fruitTypes.forEach(healthy => {
+            this.load.image(healthy, `assets/healthies/${healthy}.png`);
         });
 
-        console.log('GameScene: create() complete');
+        junkTypes.forEach(junk => {
+            this.load.image(junk, `assets/junks/${junk}.png`);
+        });
     }
 
-    // Game loop - runs every frame
-    update(time, delta) {
-        // console.log('GameScene: update()', time, delta); // Uncomment for debugging
+    create() {
+        const { width, height } = this.sys.game.config;
 
-        // Example update logic (e.g., move a character, check collisions)
-        // If you had the logo, you could rotate it:
-        // if (this.logo) {
-        //    this.logo.rotation += 0.01;
-        // }
+        // Moving background
+        this.background = this.add.tileSprite(0, 0, 0, 0, 'background')
+        .setOrigin(0, 0)
+        .setScrollFactor(0)
+        .setDepth(-1);
+
+        const bg = this.textures.get('background').getSourceImage();
+        const scaleX = this.sys.game.config.width / bg.width;
+        const scaleY = this.sys.game.config.height / bg.height;
+        this.background.setScale(scaleX, scaleY);
+
+        // Score
+        this.scoreText = this.add.text(16, 16, 'Score: 0', {
+            fontSize: '24px',
+            fill: '#fff',
+            stroke: '#000',
+            strokeThickness: 4
+        });
+
+        // Groups for fruits and junks
+        this.powerUps = this.physics.add.group();
+        this.hazards = this.physics.add.group();
+
+        // Spawn loops
+        this.time.addEvent({
+            delay: Phaser.Math.Between(2500, 4500),
+            callback: this.spawnPowerUp,
+            callbackScope: this,
+            loop: true
+        });
+
+        this.time.addEvent({
+            delay: Phaser.Math.Between(2000, 4000),
+            callback: this.spawnHazard,
+            callbackScope: this,
+            loop: true
+        });
+    }
+
+    update() {
+        this.background.tilePositionX += this.gameSpeed;
+
+        this.powerUps.getChildren().forEach(item => {
+            if (item.x < -item.width) item.destroy();
+        });
+
+        this.hazards.getChildren().forEach(hazard => {
+            if (hazard.x < -hazard.width) hazard.destroy();
+        });
+    }
+
+    isTooClose(newX, newY) {
+        const dx = Math.abs(newX - this.lastSpawnedItemX);
+        const dy = Math.abs(newY - this.lastSpawnedItemY);
+        const itemSize = 80;
+        if (dx < this.minDistanceBetweenItems) {
+            if (dy < this.minYDistanceBetweenItems) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    spawnPowerUp() {
+        const fruitTypes = ['Avocado','Boiled Egg','Berries','Broccoli','Mango', 'Banana', 'Pineapple', 'Pomegranate', 'Proteinshake'];
+        const key = Phaser.Utils.Array.GetRandom(fruitTypes);
+        const currentX = this.sys.game.config.width + 50;
+
+        let y;
+        let attempts = 0;
+        const maxAttempts = 10;
+
+        do {
+            y = Phaser.Math.Between(this.itemSpawnHeightRange[0], this.itemSpawnHeightRange[1]);
+            attempts++;
+        } while (this.isTooClose(currentX, y) && attempts < maxAttempts);
+
+        const item = this.powerUps.create(currentX, y, key);
+        item.setVelocityX(-this.gameSpeed * 50);
+        item.setDisplaySize(80, 80);
+        item.body.allowGravity = false;
+        item.setImmovable(true);
+        item.setDepth(0);
+
+        this.lastSpawnedItemX = currentX;
+        this.lastSpawnedItemY = y;
+    }
+
+    spawnHazard() {
+        const junkTypes = ['Fries','Burger', 'Hotdog', 'Donuts', 'Pizza'];
+        const key = Phaser.Utils.Array.GetRandom(junkTypes);
+        const currentX = this.sys.game.config.width + 100;
+
+        let y;
+        let attempts = 0;
+        const maxAttempts = 10; 
+
+        do {
+            y = Phaser.Math.Between(this.itemSpawnHeightRange[0], this.itemSpawnHeightRange[1]);
+            attempts++;
+        } while (this.isTooClose(currentX, y) && attempts < maxAttempts);
+
+        const hazard = this.hazards.create(currentX, y, key);
+        hazard.setVelocityX(-this.gameSpeed * 50);
+        hazard.setDisplaySize(80, 80);
+        hazard.body.allowGravity = false;
+        hazard.setImmovable(true);
+        hazard.setDepth(0);
+
+        this.lastSpawnedItemX = currentX;
+        this.lastSpawnedItemY = y;
     }
 }
