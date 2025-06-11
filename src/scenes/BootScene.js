@@ -34,7 +34,7 @@ export default class BootScene extends Phaser.Scene {
             progressBox.destroy();
             loadingText.destroy();
         });
-
+        //changes
         for (let i = 0; i < 10; i++) {
             this.load.image(`dummy${i}`, 'assets/dummy.png');
         }
