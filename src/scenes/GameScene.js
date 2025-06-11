@@ -4,17 +4,21 @@ export default class GameScene extends Phaser.Scene {
         super({ key: 'GameScene' });
         this.gameSpeed = 4;
         this.score = 0;
+        this.lastSpawnedItemX = -Infinity;
+        this.lastSpawnedItemY = -Infinity;
+        this.minDistanceBetweenItems = 150;
+        this.minYDistanceBetweenItems = 120; 
+        this.itemSpawnHeightRange = [150, 300];
     }
 
-    // Load assets for this scene
     preload() {
-        const fruitTypes = ['Mango', 'Banana', 'Cherries', 'Pineapple', 'Pomegranate'];
-        const junkTypes = ['Fries','Burger', 'Hotdog', 'Donuts', 'Icecream','Pizza'];
+        const fruitTypes = ['Avocado','Boiled Egg','Berries','Broccoli','Mango', 'Banana', 'Pineapple', 'Pomegranate', 'Proteinshake'];
+        const junkTypes = ['Candy Bar','Soda','Fries','Burger', 'Hotdog', 'Donuts','Pizza'];
 
-        this.load.image('background', 'assets/background.png');
+        this.load.image('background', 'assets/background.jpg');
 
-        fruitTypes.forEach(fruit => {
-            this.load.image(fruit, `assets/fruits/${fruit}.png`);
+        fruitTypes.forEach(healthy => {
+            this.load.image(healthy, `assets/healthies/${healthy}.png`);
         });
 
         junkTypes.forEach(junk => {
@@ -23,7 +27,7 @@ export default class GameScene extends Phaser.Scene {
     }
 
     create() {
-        console.log('GameScene: create()');
+        const { width, height } = this.sys.game.config;
 
         // Moving background
         this.background = this.add.tileSprite(0, 0, 0, 0, 'background')
@@ -50,19 +54,18 @@ export default class GameScene extends Phaser.Scene {
 
         // Spawn loops
         this.time.addEvent({
-            delay: Phaser.Math.Between(2000, 4000),
+            delay: Phaser.Math.Between(2500, 4500),
             callback: this.spawnPowerUp,
             callbackScope: this,
             loop: true
         });
 
         this.time.addEvent({
-            delay: Phaser.Math.Between(1500, 3500),
+            delay: Phaser.Math.Between(2000, 4000),
             callback: this.spawnHazard,
             callbackScope: this,
             loop: true
         });
-
     }
 
     update() {
@@ -77,25 +80,65 @@ export default class GameScene extends Phaser.Scene {
         });
     }
 
+    isTooClose(newX, newY) {
+        const dx = Math.abs(newX - this.lastSpawnedItemX);
+        const dy = Math.abs(newY - this.lastSpawnedItemY);
+        const itemSize = 80;
+        if (dx < this.minDistanceBetweenItems) {
+            if (dy < this.minYDistanceBetweenItems) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     spawnPowerUp() {
-        const fruitTypes = ['Mango', 'Banana', 'Cherries', 'Pineapple', 'Pomegranate'];
+        const fruitTypes = ['Avocado','Boiled Egg','Berries','Broccoli','Mango', 'Banana', 'Pineapple', 'Pomegranate', 'Proteinshake'];
         const key = Phaser.Utils.Array.GetRandom(fruitTypes);
-        const y = Phaser.Math.Between(200, 400);
-    
-        const item = this.powerUps.create(this.sys.game.config.width + 50, y, key);
+        const currentX = this.sys.game.config.width + 50;
+
+        let y;
+        let attempts = 0;
+        const maxAttempts = 10;
+
+        do {
+            y = Phaser.Math.Between(this.itemSpawnHeightRange[0], this.itemSpawnHeightRange[1]);
+            attempts++;
+        } while (this.isTooClose(currentX, y) && attempts < maxAttempts);
+
+        const item = this.powerUps.create(currentX, y, key);
         item.setVelocityX(-this.gameSpeed * 50);
         item.setDisplaySize(80, 80);
         item.body.allowGravity = false;
+        item.setImmovable(true);
+        item.setDepth(0);
+
+        this.lastSpawnedItemX = currentX;
+        this.lastSpawnedItemY = y;
     }
-    
+
     spawnHazard() {
-        const junkTypes = ['Fries','Burger', 'Hotdog', 'Donuts', 'Icecream', 'Pizza'];
+        const junkTypes = ['Fries','Burger', 'Hotdog', 'Donuts', 'Pizza'];
         const key = Phaser.Utils.Array.GetRandom(junkTypes);
-        const y = Phaser.Math.Between(200, 400);
-    
-        const hazard = this.hazards.create(this.sys.game.config.width + 100, y, key);
+        const currentX = this.sys.game.config.width + 100;
+
+        let y;
+        let attempts = 0;
+        const maxAttempts = 10; 
+
+        do {
+            y = Phaser.Math.Between(this.itemSpawnHeightRange[0], this.itemSpawnHeightRange[1]);
+            attempts++;
+        } while (this.isTooClose(currentX, y) && attempts < maxAttempts);
+
+        const hazard = this.hazards.create(currentX, y, key);
         hazard.setVelocityX(-this.gameSpeed * 50);
         hazard.setDisplaySize(80, 80);
         hazard.body.allowGravity = false;
+        hazard.setImmovable(true);
+        hazard.setDepth(0);
+
+        this.lastSpawnedItemX = currentX;
+        this.lastSpawnedItemY = y;
     }
 }
