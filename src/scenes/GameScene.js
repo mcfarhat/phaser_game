@@ -9,6 +9,9 @@ export default class GameScene extends Phaser.Scene {
         this.minDistanceBetweenItems = 150;
         this.minYDistanceBetweenItems = 120; 
         this.itemSpawnHeightRange = [150, 300];
+
+         this.player = null; // To hold the player sprite
+    
     }
 
     preload() {
@@ -16,6 +19,7 @@ export default class GameScene extends Phaser.Scene {
         const junkTypes = ['Candy Bar','Soda','Fries','Burger', 'Hotdog', 'Donuts','Pizza'];
 
         this.load.image('background', 'assets/background.jpg');
+        this.load.image('runner', 'assets/runner.png');
 
         fruitTypes.forEach(healthy => {
             this.load.image(healthy, `assets/healthies/${healthy}.png`);
@@ -24,49 +28,57 @@ export default class GameScene extends Phaser.Scene {
         junkTypes.forEach(junk => {
             this.load.image(junk, `assets/junks/${junk}.png`);
         });
+        
     }
+create() {
+   
+    const { width, height } = this.sys.game.config;
 
-    create() {
-        const { width, height } = this.sys.game.config;
-
-        // Moving background
-        this.background = this.add.tileSprite(0, 0, 0, 0, 'background')
+  
+    this.background = this.add.tileSprite(0, 0, 0, 0, 'background')
         .setOrigin(0, 0)
         .setScrollFactor(0)
         .setDepth(-1);
 
-        const bg = this.textures.get('background').getSourceImage();
-        const scaleX = this.sys.game.config.width / bg.width;
-        const scaleY = this.sys.game.config.height / bg.height;
-        this.background.setScale(scaleX, scaleY);
+    const bg = this.textures.get('background').getSourceImage();
+    const scaleX = this.sys.game.config.width / bg.width;
+    const scaleY = this.sys.game.config.height / bg.height;
+    this.background.setScale(scaleX, scaleY);
 
-        // Score
-        this.scoreText = this.add.text(16, 16, 'Score: 0', {
-            fontSize: '24px',
-            fill: '#fff',
-            stroke: '#000',
-            strokeThickness: 4
-        });
+    // Score
+    this.scoreText = this.add.text(16, 16, 'Score: 0', {
+        fontSize: '24px',
+        fill: '#fff',
+        stroke: '#000',
+        strokeThickness: 4
+    });
 
-        // Groups for fruits and junks
-        this.powerUps = this.physics.add.group();
-        this.hazards = this.physics.add.group();
+    // --- NEW PLAYER SETUP (CORRECTED) ---
+    // Now 'height' is correctly defined and available here
+    this.player = this.physics.add.sprite(100, 300, 'runner');
+    this.player.setScale(0.2); // Adjust this size if needed
+    this.player.setCollideWorldBounds(true);
+    // --- END NEW BLOCK ---
 
-        // Spawn loops
-        this.time.addEvent({
-            delay: Phaser.Math.Between(2500, 4500),
-            callback: this.spawnPowerUp,
-            callbackScope: this,
-            loop: true
-        });
+    // Groups for fruits and junks
+    this.powerUps = this.physics.add.group();
+    this.hazards = this.physics.add.group();
 
-        this.time.addEvent({
-            delay: Phaser.Math.Between(2000, 4000),
-            callback: this.spawnHazard,
-            callbackScope: this,
-            loop: true
-        });
-    }
+    // Spawn loops
+    this.time.addEvent({
+        delay: Phaser.Math.Between(2500, 4500),
+        callback: this.spawnPowerUp,
+        callbackScope: this,
+        loop: true
+    });
+
+    this.time.addEvent({
+        delay: Phaser.Math.Between(2000, 4000),
+        callback: this.spawnHazard,
+        callbackScope: this,
+        loop: true
+    });
+}
 
     update() {
         this.background.tilePositionX += this.gameSpeed;
