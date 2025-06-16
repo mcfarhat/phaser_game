@@ -1,4 +1,3 @@
-// GameScene.js
 export default class GameScene extends Phaser.Scene {
     constructor() {
         super({ key: 'GameScene' });
@@ -7,7 +6,7 @@ export default class GameScene extends Phaser.Scene {
         this.lastSpawnedItemX = -Infinity;
         this.lastSpawnedItemY = -Infinity;
         this.minDistanceBetweenItems = 150;
-        this.minYDistanceBetweenItems = 120; 
+        this.minYDistanceBetweenItems = 120;
         this.itemSpawnHeightRange = [150, 300];
     }
 
@@ -24,23 +23,30 @@ export default class GameScene extends Phaser.Scene {
         junkTypes.forEach(junk => {
             this.load.image(junk, `assets/junks/${junk}.png`);
         });
+
+        this.load.spritesheet('runner', 'assets/players/player2-sprite.png', {
+            frameWidth: 240,
+            frameHeight: 220,
+            margin: 0,
+            spacing: 0
+        });
     }
 
     create() {
         const { width, height } = this.sys.game.config;
 
         // Moving background
-        this.background = this.add.tileSprite(0, 0, 0, 0, 'background')
-        .setOrigin(0, 0)
-        .setScrollFactor(0)
-        .setDepth(-1);
+        this.background = this.add.tileSprite(0, 0, width, height, 'background')
+            .setOrigin(0, 0)
+            .setScrollFactor(0)
+            .setDepth(-1);
 
         const bg = this.textures.get('background').getSourceImage();
-        const scaleX = this.sys.game.config.width / bg.width;
-        const scaleY = this.sys.game.config.height / bg.height;
-        this.background.setScale(scaleX, scaleY);
+        const scaleX = width / bg.width;
+        const scaleY = height / bg.height;
+        this.background.setTileScale(scaleX, scaleY);
 
-        // Score
+        // Score text
         this.scoreText = this.add.text(16, 16, 'Score: 0', {
             fontSize: '24px',
             fill: '#fff',
@@ -52,7 +58,31 @@ export default class GameScene extends Phaser.Scene {
         this.powerUps = this.physics.add.group();
         this.hazards = this.physics.add.group();
 
-        // Spawn loops
+        // Create the runner
+        this.runner = this.physics.add.sprite(width * 0.2, height - 120, 'runner');
+        this.runner.setScale(1.5);
+        this.runner.body.allowGravity = false;
+        this.runner.setOrigin(0.5, 1); // Center-bottom origin
+        this.runner.setDepth(10); // Ensure runner renders above items
+
+        const cropLeft = 30;   // Pixels to crop from left
+        const cropRight = 30;  // Pixels to crop from right
+        const cropTop = 10;    // Pixels to crop from top
+        const cropBottom = 40; // Pixels to crop from bottom
+
+        // Create animation with custom cropping
+        this.anims.create({
+            key: 'run',
+            frames: this.anims.generateFrameNumbers('runner', { 
+                start: 0, 
+                end: 3 
+            }),
+            frameRate: 10,
+            repeat: -1
+        });
+
+        this.runner.anims.play('run', true);
+        // Spawn events
         this.time.addEvent({
             delay: Phaser.Math.Between(2500, 4500),
             callback: this.spawnPowerUp,
@@ -124,7 +154,7 @@ export default class GameScene extends Phaser.Scene {
 
         let y;
         let attempts = 0;
-        const maxAttempts = 10; 
+        const maxAttempts = 10;
 
         do {
             y = Phaser.Math.Between(this.itemSpawnHeightRange[0], this.itemSpawnHeightRange[1]);
