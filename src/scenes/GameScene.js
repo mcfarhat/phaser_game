@@ -171,9 +171,7 @@ export default class GameScene extends Phaser.Scene {
                     .setScale(0)
                     .setOrigin(0.5)
                     .setPosition(this.sys.game.config.width / 2 , 140);
-        
-                // Zoom in and then fade out
-                this.tweens.add({
+                    this.tweens.add({
                     targets: this.motivationText,
                     scale: 1,
                     ease: 'Back.Out',
