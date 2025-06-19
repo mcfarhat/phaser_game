@@ -24,16 +24,30 @@ export default class GameScene extends Phaser.Scene {
             this.load.image(junk, `assets/junks/${junk}.png`);
         });
 
-        // this.load.spritesheet('runner2', 'assets/players/player2-sprite.png', {
-        //     frameWidth: 240,
-        //     frameHeight: 220,
+        // this.load.spritesheet('runner1', 'assets/players/player1-sprite.png', {
+        //     frameWidth: 204,
+        //     frameHeight: 226,
         //     margin: 0,
         //     spacing: 0
         // });
 
-        this.load.spritesheet('runner3', 'assets/players/player3-sprite2.png', {
-            frameWidth: 105,
-            frameHeight: 214,
+        // this.load.spritesheet('runner2', 'assets/players/player2-sprite.png', {
+        //     frameWidth: 65,
+        //     frameHeight: 55,
+        //     margin: 0,
+        //     spacing: 0
+        // });
+
+        // this.load.spritesheet('runner3', 'assets/players/player3-sprite.png', {
+        //     frameWidth: 680,
+        //     frameHeight: 472,
+        //     margin: 0,
+        //     spacing: 0
+        // });
+
+        this.load.spritesheet('runner4', 'assets/players/player4-sprite.png', {
+            frameWidth: 165,
+            frameHeight: 200,
             margin: 0,
             spacing: 0
         });
@@ -66,8 +80,8 @@ export default class GameScene extends Phaser.Scene {
         this.hazards = this.physics.add.group();
 
         // Create the runner
-        this.runner = this.physics.add.sprite(width * 0.2, height - 120, 'runner3');
-        this.runner.setScale(1.5);
+        this.runner = this.physics.add.sprite(width * 0.2, height - 100, 'runner4');
+        this.runner.setScale(1.2);
         this.runner.body.allowGravity = false;
         this.runner.setOrigin(0.5, 1); // Center-bottom origin
         this.runner.setDepth(10); // Ensure runner renders above items
@@ -75,11 +89,11 @@ export default class GameScene extends Phaser.Scene {
         // Create animation with custom cropping
         this.anims.create({
             key: 'run',
-            frames: this.anims.generateFrameNumbers('runner3', { 
+            frames: this.anims.generateFrameNumbers('runner4', { 
                 start: 0, 
-                end: 4 
+                end: 7
             }),
-            frameRate: 1,
+            frameRate: 10,
             repeat: -1
         });
 
