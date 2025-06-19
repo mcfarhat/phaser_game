@@ -24,9 +24,16 @@ export default class GameScene extends Phaser.Scene {
             this.load.image(junk, `assets/junks/${junk}.png`);
         });
 
-        this.load.spritesheet('runner', 'assets/players/player2-sprite.png', {
-            frameWidth: 240,
-            frameHeight: 220,
+        // this.load.spritesheet('runner2', 'assets/players/player2-sprite.png', {
+        //     frameWidth: 240,
+        //     frameHeight: 220,
+        //     margin: 0,
+        //     spacing: 0
+        // });
+
+        this.load.spritesheet('runner3', 'assets/players/player3-sprite2.png', {
+            frameWidth: 105,
+            frameHeight: 214,
             margin: 0,
             spacing: 0
         });
@@ -59,25 +66,20 @@ export default class GameScene extends Phaser.Scene {
         this.hazards = this.physics.add.group();
 
         // Create the runner
-        this.runner = this.physics.add.sprite(width * 0.2, height - 120, 'runner');
+        this.runner = this.physics.add.sprite(width * 0.2, height - 120, 'runner3');
         this.runner.setScale(1.5);
         this.runner.body.allowGravity = false;
         this.runner.setOrigin(0.5, 1); // Center-bottom origin
         this.runner.setDepth(10); // Ensure runner renders above items
 
-        const cropLeft = 30;   // Pixels to crop from left
-        const cropRight = 30;  // Pixels to crop from right
-        const cropTop = 10;    // Pixels to crop from top
-        const cropBottom = 40; // Pixels to crop from bottom
-
         // Create animation with custom cropping
         this.anims.create({
             key: 'run',
-            frames: this.anims.generateFrameNumbers('runner', { 
+            frames: this.anims.generateFrameNumbers('runner3', { 
                 start: 0, 
-                end: 3 
+                end: 4 
             }),
-            frameRate: 10,
+            frameRate: 1,
             repeat: -1
         });
 
