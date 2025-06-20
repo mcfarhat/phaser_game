@@ -1,4 +1,4 @@
-// StartScene.js
+//StartScene.js
 export default class StartScene extends Phaser.Scene {
     constructor() {
         super({ key: 'StartScene' });
@@ -11,12 +11,8 @@ export default class StartScene extends Phaser.Scene {
         const height = this.sys.game.config.height;
 
         WebFont.load({
-            google: {
-                families: ['Luckiest Guy']
-            },
-            active: () => {
-                this.createTitleText();
-            }
+            google: { families: ['Luckiest Guy'] },
+            active: () => this.createTitleText()
         });
 
         // Background
@@ -25,189 +21,146 @@ export default class StartScene extends Phaser.Scene {
             .setDisplaySize(width, height);
 
         // Background Music
+        if (!this.registry.has('musicVolume')) this.registry.set('musicVolume', 0);
+        if (!this.registry.has('soundVolume')) this.registry.set('soundVolume', 0.5);
+        if (!this.registry.has('musicEnabled')) this.registry.set('musicEnabled', true);
+        if (!this.registry.has('soundEnabled')) this.registry.set('soundEnabled', true);
+
         this.bgMusic = this.sound.get('start-sound') || this.sound.add('start-sound', { loop: true });
         if (this.registry.get('musicEnabled')) {
             if (!this.bgMusic.isPlaying) {
-                this.bgMusic.play();
+                this.bgMusic.play({ volume: this.registry.get('musicVolume') });
             }
         }
 
         // SETTINGS button
         const settingsBtn = this.add.text(width - 30, 20, '⚙', {
-            fontSize: '25px',
+            fontSize: '27px',
             color: '#FFF',
             fontStyle: 'bold'
         }).setOrigin(1, 0)
-          .setInteractive({ useHandCursor: true })
-          .setScrollFactor(0)
-          .setDepth(10);
+        .setInteractive({ useHandCursor: true });
 
         settingsBtn.on('pointerdown', () => {
-            showSettingsPanel();
+            this.clickSound?.play();
+            document.querySelector('.overlay').style.display = 'block';
+            document.querySelector('.panel').style.display = 'flex';
+
+            document.getElementById('musicSlider').value = this.registry.get('musicVolume') * 100;
+            document.getElementById('soundSlider').value = this.registry.get('soundVolume') * 100;
         });
 
-        // SETTINGS panel
-        const panel = this.add.container(0, 0).setDepth(20).setVisible(false);
 
-        const dim = this.add.rectangle(0, 0, width, height, 0x000000, 0.6)
-            .setOrigin(0, 0);
-        panel.add(dim);
+        // OK Button
+        const okButton = document.querySelector('.panel .button');
+        okButton.onclick = () => {
+            this.clickSound?.play();
 
-        const card = this.add.graphics();
-        const cardWidth = 230;
-        const cardHeight = 200;
-        const cardX = width / 2 - cardWidth / 2;
-        const cardY = height / 2 - cardHeight / 2;
+            const newMusicVolume = parseInt(document.getElementById('musicSlider').value) / 100;
+            const newSoundVolume = parseInt(document.getElementById('soundSlider').value) / 100;
 
-        card.fillStyle(0x8D715D, 0.85);
-        card.fillRoundedRect(cardX, cardY, cardWidth, cardHeight, 20);
-        panel.add(card);
+            this.registry.set('musicVolume', newMusicVolume);
+            this.registry.set('soundVolume', newSoundVolume);
 
-        // Title
-        const title = this.add.text(width / 2, cardY + 35, 'Settings', {
-            fontSize: '26px',
-            color: '#dbc49a',
-            fontFamily: 'Arial',
-            fontStyle: 'bold'
-        }).setOrigin(0.5);
-        panel.add(title);
-
-        // MUSIC toggle
-        const musicEmoji = this.add.text(cardX + 50, cardY + 80, '', {
-            fontSize: '22px',
-            color: '#ffffff',
-            padding: { x: 10, y: 5 }
-        }).setInteractive({ useHandCursor: true });
-        panel.add(musicEmoji);
-
-        const musicLabel = this.add.text(cardX + 100, cardY + 84, 'MUSIC', {
-            fontSize: '20px',
-            color: '#dbc49a',
-            fontFamily: 'Arial',
-        });
-        panel.add(musicLabel);
-
-        musicEmoji.on('pointerdown', () => {
-            const current = this.registry.get('musicEnabled');
-            const newValue = !current;
-            this.registry.set('musicEnabled', newValue);
-            updateMusicEmoji();
-        
-            if (newValue) {
-                if (!this.bgMusic.isPlaying) {
-                    this.bgMusic.play({ loop: true });
-                }
-            } else {
-                if (this.bgMusic && this.bgMusic.isPlaying) {
-                    this.bgMusic.stop();
+            if (this.bgMusic) {
+                if (newMusicVolume > 0) {
+                    if (!this.bgMusic.isPlaying) {
+                        this.bgMusic.play({ loop: true, volume: newMusicVolume });
+                    } else {
+                        this.bgMusic.setVolume(newMusicVolume);
+                    }
+                } else {
+                    if (this.bgMusic.isPlaying) this.bgMusic.stop();
                 }
             }
-        });  
 
-        const updateMusicEmoji = () => {
-            const enabled = this.registry.get('musicEnabled') ?? false;
-            musicEmoji.setText(enabled ? '🔈' : '🔇');
+            if (this.clickSound) {
+                this.clickSound.setVolume(newSoundVolume);
+            }
+
+            this.clickSound?.play();
+
+            document.querySelector('.panel').style.display = 'none';
+            document.querySelector('.overlay').style.display = 'none';
         };
 
-        // BACK button
-        const backBtnIcon = this.add.text(cardX + 55, cardY + 125, '←', {
-            fontSize: '20px',
-            color: '#FFF',
-            fontFamily: 'Arial',
-            fontStyle: 'bold',
-            padding: { x: 10, y: 5 }
-        }).setInteractive({ useHandCursor: true });
-        panel.add(backBtnIcon);
-
-        const backLabel = this.add.text(cardX + 100, cardY + 129, 'BACK', {
-            fontSize: '20px',
-            color: '#dbc49a',
-            fontFamily: 'Arial',
-        });
-        panel.add(backLabel);
-
-        backBtnIcon.on('pointerdown', () => {
-            panel.setVisible(false);
-        });
-
-        const showSettingsPanel = () => {
-            updateMusicEmoji();
-            panel.setVisible(true);
-        };  
-        
         // START button
-        const btnWidth = 130;
+        const btnWidth = 100;
         const btnHeight = 50;
         const btnX = width / 2 - btnWidth / 2;
-        const btnY = height / 2 + 210;
+        const btnY = height / 2 + 100;
 
         const buttonBg = this.add.graphics();
-        const normalColor = 0x4a2f1d;
-        const hoverColor = 0xdbc49a;
+        const normalColor = 0x729C97;
+        const hoverColor = 0x7AAFBA;
 
         buttonBg.fillStyle(normalColor, 1);
-        buttonBg.fillRoundedRect(btnX, btnY, btnWidth, btnHeight, 15);
+        buttonBg.fillRoundedRect(0, 0, btnWidth, btnHeight, 13);
+
+        const startText = this.add.text(btnWidth / 2, btnHeight / 2, 'START', {
+            fontSize: '22px',
+            fontFamily: 'Arial',
+            fill: '#fff',
+            fontStyle: 'bold'
+        }).setOrigin(0.5);
+
+        const startButton = this.add.container(btnX, btnY, [buttonBg, startText]);
+
         buttonBg.setInteractive(
-            new Phaser.Geom.Rectangle(btnX, btnY, btnWidth, btnHeight),
+            new Phaser.Geom.Rectangle(0, 0, btnWidth, btnHeight),
             Phaser.Geom.Rectangle.Contains
         ).on('pointerover', () => {
             buttonBg.clear();
             buttonBg.fillStyle(hoverColor, 1);
-            buttonBg.fillRoundedRect(btnX, btnY, btnWidth, btnHeight, 15);
+            buttonBg.fillRoundedRect(0, 0, btnWidth, btnHeight, 15);
             this.input.setDefaultCursor('pointer');
         }).on('pointerout', () => {
             buttonBg.clear();
             buttonBg.fillStyle(normalColor, 1);
-            buttonBg.fillRoundedRect(btnX, btnY, btnWidth, btnHeight, 15);
+            buttonBg.fillRoundedRect(0, 0, btnWidth, btnHeight, 15);
             this.input.setDefaultCursor('default');
         }).on('pointerdown', () => {
+            this.clickSound?.play();
             this.scene.start('GameScene');
         });
 
-        this.add.text(width / 2, btnY + btnHeight / 2, 'START', {
-            fontSize: '23px',
-            fontFamily: 'Arial',
-            fill: '#8D715D',
-            fontStyle: 'bold'
-        }).setOrigin(0.5);
+        this.tweens.add({
+            targets: startButton,
+            scaleX: 1.08,
+            scaleY: 1.08,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut',
+            duration: 600
+        });
 
         this.input.keyboard.on('keydown-SPACE', () => {
             this.scene.start('GameScene');
         });
+
+        this.clickSound = this.sound.get('click-sound') || this.sound.add('click-sound', {
+            volume: this.registry.get('soundVolume') ?? 0.5
+        });        
     }
+
     createTitleText() {
         const width = this.sys.game.config.width;
         const height = this.sys.game.config.height;
-    
-        const titleText = this.add.text(width / 2, height * 0.2, 'JUNK RUN', {
+
+        this.add.text(width / 2, height * 0.21, 'Healthy Hustle', {
             fontFamily: 'Luckiest Guy',
-            fontSize: '60px',
-            color: '#dbc49a',
-            stroke: '#4a2f1d',
-            strokeThickness: 8,
+            fontSize: '55px',
+            color: '#E0F7FA',
+            stroke: '#729C97',
+            strokeThickness: 10,
             shadow: {
-                offsetX: 4,
-                offsetY: 4,
-                color: '#000000',
+                offsetX: 2,
+                offsetY: 2,
+                color: '#000',
                 blur: 4,
                 stroke: true,
                 fill: true
             }
         }).setOrigin(0.5);
-    
-        this.tweens.timeline({
-            targets: titleText,
-            loop: -1,
-            ease: 'Sine.easeInOut',
-            tweens: [
-                { angle: -4, y: titleText.y - 3, duration: 280 },
-                { angle: 4, y: titleText.y + 3, duration: 280 },
-                { angle: -2, y: titleText.y - 2, duration: 280 },
-                { angle: 2, y: titleText.y + 2, duration: 280 },
-                { angle: 0, y: titleText.y, duration: 280 },
-                { delay: 500 }
-            ]
-        });
     }
-    
 }

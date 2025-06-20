@@ -21,7 +21,7 @@ export default class BootScene extends Phaser.Scene {
 
         this.load.on('progress', (value) => {
             progressBar.clear();
-            progressBar.fillStyle(0x39ff14, 1);
+            progressBar.fillStyle(0x729C97, 1);
             progressBar.fillRect(250, 280, 300 * value, 30);
         });
 
@@ -56,7 +56,8 @@ export default class BootScene extends Phaser.Scene {
         });
 
         this.load.image('start-bg', 'assets/start-background.jpg');
-        this.load.audio('start-sound', 'assets/sound.mp3');
+        this.load.audio('start-sound', 'assets/sounds/music.mp3');
+        this.load.audio('click-sound', 'assets/sounds/click.mp3');
     }
 
     create() {
@@ -64,7 +65,7 @@ export default class BootScene extends Phaser.Scene {
 
         // Music
         if (!this.sound.get('bgMusic')) {
-            this.bgMusic = this.sound.add('start-sound', { loop: true, volume: 0.5 });
+            this.bgMusic = this.sound.add('start-sound', { loop: true, volume: 1 });
             this.registry.set('musicEnabled', false);
         } else {
             this.bgMusic = this.sound.get('bgMusic');
@@ -73,6 +74,14 @@ export default class BootScene extends Phaser.Scene {
         if (this.registry.get('musicEnabled')) {
             if (!this.bgMusic.isPlaying) this.bgMusic.play();
         }
+        
+        if (!this.registry.has('soundVolume')) {
+            this.registry.set('soundVolume', 0.5); // ✅ Default to half volume
+        }
+        
+        this.clickSound = this.sound.get('click-sound') || this.sound.add('click-sound', {
+            volume: this.registry.get('soundVolume') ?? 0.5
+        });               
 
         this.scene.start('StartScene');
     }
