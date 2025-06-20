@@ -45,9 +45,51 @@ export default class GameScene extends Phaser.Scene {
         //     spacing: 0
         // });
 
-        this.load.spritesheet('runner4', 'assets/players/player4-sprite.png', {
-            frameWidth: 165,
-            frameHeight: 200,
+        // this.load.spritesheet('runner4', 'assets/players/player4-sprite.png', {
+        //     frameWidth: 165,
+        //     frameHeight: 200,
+        //     margin: 0,
+        //     spacing: 0
+        // });
+
+        // this.load.spritesheet('runner5', 'assets/players/player5-sprite.png', {
+        //     frameWidth: 305,
+        //     frameHeight: 330,
+        //     margin: 0,
+        //     spacing: 0
+        // });
+
+        // this.load.spritesheet('runner6', 'assets/players/player6-sprite.png', {
+        //     frameWidth: 220,
+        //     frameHeight: 260,
+        //     margin: 0,
+        //     spacing: 0
+        // });
+
+        // this.load.spritesheet('runner7', 'assets/players/player7-sprite.png', {
+        //     frameWidth: 327,
+        //     frameHeight: 430,
+        //     margin: 0,
+        //     spacing: 0
+        // });
+
+        // this.load.spritesheet('runner8', 'assets/players/player8-sprite.png', {
+        //     frameWidth: 195,
+        //     frameHeight: 250,
+        //     margin: 0,
+        //     spacing: 0
+        // });
+
+        // this.load.spritesheet('runner9', 'assets/players/player9-sprite.png', {
+        //     frameWidth: 88,
+        //     frameHeight: 106,
+        //     margin: 0,
+        //     spacing: 0
+        // });
+
+        this.load.spritesheet('runner10', 'assets/players/player10-sprite.png', {
+            frameWidth: 92,
+            frameHeight: 136,
             margin: 0,
             spacing: 0
         });
@@ -80,8 +122,8 @@ export default class GameScene extends Phaser.Scene {
         this.hazards = this.physics.add.group();
 
         // Create the runner
-        this.runner = this.physics.add.sprite(width * 0.2, height - 100, 'runner4');
-        this.runner.setScale(1.2);
+        this.runner = this.physics.add.sprite(width * 0.2, height - 100, 'runner10');
+        this.runner.setScale(1.5);
         this.runner.body.allowGravity = false;
         this.runner.setOrigin(0.5, 1); // Center-bottom origin
         this.runner.setDepth(10); // Ensure runner renders above items
@@ -89,9 +131,9 @@ export default class GameScene extends Phaser.Scene {
         // Create animation with custom cropping
         this.anims.create({
             key: 'run',
-            frames: this.anims.generateFrameNumbers('runner4', { 
+            frames: this.anims.generateFrameNumbers('runner10', { 
                 start: 0, 
-                end: 7
+                end: 5
             }),
             frameRate: 10,
             repeat: -1
