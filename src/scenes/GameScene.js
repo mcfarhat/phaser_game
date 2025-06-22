@@ -11,11 +11,14 @@ export default class GameScene extends Phaser.Scene {
         this.itemSpawnHeightRange = [150, 300];
     }
 
-    preload() {
+       preload() {
         const fruitTypes = ['Avocado','Boiled Egg','Berries','Broccoli','Mango', 'Banana', 'Pineapple', 'Pomegranate', 'Proteinshake'];
         const junkTypes = ['Candy Bar','Soda','Fries','Burger', 'Hotdog', 'Donuts','Pizza'];
 
         this.load.image('background', 'assets/background.jpg');
+
+      
+        this.load.spritesheet('runner', 'assets/runner_run.png', { frameWidth: 269, frameHeight: 1024 });
 
         fruitTypes.forEach(healthy => {
             this.load.image(healthy, `assets/healthies/${healthy}.png`);
@@ -51,8 +54,33 @@ export default class GameScene extends Phaser.Scene {
         // Groups for fruits and junks
         this.powerUps = this.physics.add.group();
         this.hazards = this.physics.add.group();
+              
+        this.player = this.physics.add.sprite(150, 500, 'runner', 0);
+        
+        
+        this.player.setOrigin(0.5, 1);
+        this.player.setScale(0.35); 
+      
+        this.player.setGravityY(1200);
 
-        // Spawn loops
+        
+        this.player.setCollideWorldBounds(true);
+
+      
+        this.player.body.setSize(80, 160);
+        this.player.body.setOffset(95, 840);
+        
+        
+      
+        const ground = this.add.rectangle(0, 550, width, 20, 0x000000, 0).setOrigin(0,0);
+        this.physics.add.existing(ground, true); 
+        this.physics.add.collider(this.player, ground); // Make the player stand on the ground.
+
+       
+        this.cursors = this.input.keyboard.createCursorKeys();
+        this.spacebar = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+
+
         this.time.addEvent({
             delay: Phaser.Math.Between(2500, 4500),
             callback: this.spawnPowerUp,
@@ -68,9 +96,34 @@ export default class GameScene extends Phaser.Scene {
         });
     }
 
-    update() {
+       update() {
         this.background.tilePositionX += this.gameSpeed;
 
+      
+        const playerSpeed = 350;
+        const jumpHeight = 600; 
+
+        
+        const onGround = this.player.body.blocked.down;
+
+       
+        if (this.cursors.left.isDown) {
+            this.player.setVelocityX(-playerSpeed);
+            this.player.setFlipX(true);
+        } else if (this.cursors.right.isDown) {
+            this.player.setVelocityX(playerSpeed);
+            this.player.setFlipX(false);
+        } else {
+            this.player.setVelocityX(0);
+        }
+
+        if (onGround) {
+            if (Phaser.Input.Keyboard.JustDown(this.spacebar)) {
+                this.player.setVelocityY(-jumpHeight);
+            }
+        }
+        
+        
         this.powerUps.getChildren().forEach(item => {
             if (item.x < -item.width) item.destroy();
         });
