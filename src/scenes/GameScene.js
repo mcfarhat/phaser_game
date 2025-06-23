@@ -24,75 +24,7 @@ export default class GameScene extends Phaser.Scene {
             this.load.image(junk, `assets/junks/${junk}.png`);
         });
 
-        // this.load.spritesheet('runner1', 'assets/players/player1-sprite.png', {
-        //     frameWidth: 204,
-        //     frameHeight: 226,
-        //     margin: 0,
-        //     spacing: 0
-        // });
-
-        // this.load.spritesheet('runner2', 'assets/players/player2-sprite.png', {
-        //     frameWidth: 64,
-        //     frameHeight: 59,
-        //     margin: 0,
-        //     spacing: 0
-        // });
-
-        // this.load.spritesheet('runner3', 'assets/players/player3-sprite.png', {
-        //     frameWidth: 680,
-        //     frameHeight: 472,
-        //     margin: 0,
-        //     spacing: 0
-        // });
-
-        // this.load.spritesheet('runner4', 'assets/players/player4-sprite.png', {
-        //     frameWidth: 165,
-        //     frameHeight: 200,
-        //     margin: 0,
-        //     spacing: 0
-        // });
-
-        // this.load.spritesheet('runner5', 'assets/players/player5-sprite.png', {
-        //     frameWidth: 305,
-        //     frameHeight: 330,
-        //     margin: 0,
-        //     spacing: 0
-        // });
-
-        // this.load.spritesheet('runner6', 'assets/players/player6-sprite.png', {
-        //     frameWidth: 220,
-        //     frameHeight: 260,
-        //     margin: 0,
-        //     spacing: 0
-        // });
-
-        // this.load.spritesheet('runner7', 'assets/players/player7-sprite.png', {
-        //     frameWidth: 327,
-        //     frameHeight: 430,
-        //     margin: 0,
-        //     spacing: 0
-        // });
-
-        // this.load.spritesheet('runner8', 'assets/players/player8-sprite.png', {
-        //     frameWidth: 195,
-        //     frameHeight: 270,
-        //     margin: 0,
-        //     spacing: 0
-        // });
-
-        // this.load.spritesheet('runner9', 'assets/players/player9-sprite.png', {
-        //     frameWidth: 88,
-        //     frameHeight: 106,
-        //     margin: 0,
-        //     spacing: 0
-        // });
-
-        this.load.spritesheet('runner10', 'assets/players/player10-sprite.png', {
-            frameWidth: 92,
-            frameHeight: 136,
-            margin: 0,
-            spacing: 0
-        });
+        this.load.json('characterConfigs', 'assets/charConfig.json');
     }
 
     create() {
@@ -121,39 +53,59 @@ export default class GameScene extends Phaser.Scene {
         this.powerUps = this.physics.add.group();
         this.hazards = this.physics.add.group();
 
-        // Create the runner
-        this.runner = this.physics.add.sprite(width * 0.2, height - 115, 'runner10');
-        this.runner.setScale(1.8);
-        this.runner.body.allowGravity = false;
-        this.runner.setOrigin(0.5, 1); // Center-bottom origin
-        this.runner.setDepth(10); // Ensure runner renders above items
+        // Get JSON config
+        const configs = this.cache.json.get('characterConfigs');
+        const selectedCharacter = 'runner7';
+        const config = configs[selectedCharacter];
 
-        // Create animation with custom cropping
-        this.anims.create({
-            key: 'run',
-            frames: this.anims.generateFrameNumbers('runner10', { 
-                start: 0, 
-                end: 5
-            }),
-            frameRate: 10,
-            repeat: -1
+        this.load.spritesheet(selectedCharacter, config.sprite, {
+            frameWidth: config.frameWidth,
+            frameHeight: config.frameHeight,
+            margin: 0,
+            spacing: 0
         });
 
-        this.runner.anims.play('run', true);
-        // Spawn events
-        this.time.addEvent({
-            delay: Phaser.Math.Between(2500, 4500),
-            callback: this.spawnPowerUp,
-            callbackScope: this,
-            loop: true
+
+        this.load.once('complete', () => {
+            // Create runner sprite
+            this.runner = this.physics.add.sprite(width * config.x, height - config.y, selectedCharacter);
+            this.runner.setScale(config.scale);
+            this.runner.setOrigin(0.5, 1);
+            this.runner.body.allowGravity = false;
+            this.runner.setDepth(10);
+
+            // Create the run animation
+            this.anims.create({
+                key: 'run',
+                frames: this.anims.generateFrameNumbers(selectedCharacter, {
+                    start: 0,
+                    end: config.frames - 1
+                }),
+                frameRate: 10,
+                repeat: -1
+            });
+
+            // Play the run animation
+            this.runner.anims.play('run', true);
+
+            // Set up spawn events
+            this.time.addEvent({
+                delay: Phaser.Math.Between(2500, 4500),
+                callback: this.spawnPowerUp,
+                callbackScope: this,
+                loop: true
+            });
+
+            this.time.addEvent({
+                delay: Phaser.Math.Between(2000, 4000),
+                callback: this.spawnHazard,
+                callbackScope: this,
+                loop: true
+            });
         });
 
-        this.time.addEvent({
-            delay: Phaser.Math.Between(2000, 4000),
-            callback: this.spawnHazard,
-            callbackScope: this,
-            loop: true
-        });
+        // Trigger loading of the sprite sheet
+        this.load.start();
     }
 
     update() {
