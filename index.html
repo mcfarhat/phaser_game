@@ -4,13 +4,202 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Phaser Barebone Project</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/webfont/1.6.26/webfont.js"></script>
     <style>
-        body { margin: 0; padding: 0; overflow: hidden; background-color: #000; }
-        canvas { display: block; margin: 0 auto; } /* Center the canvas */
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Luckiest Guy', cursive;
+            position: relative;
+        }
+        #game-container {
+            width: 100vw;
+            height: 100vh;
+            display: block;
+        }
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            backdrop-filter: blur(5px);
+            background-color: rgba(0, 0, 0, 0.3);
+            z-index: 98;
+            display: none;
+        }
+        .panel {
+            background-color: #59544C;
+            width: 260px;
+            height: 33%;
+            border-radius: 30px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+            padding: 15px 0;
+            text-align: center;
+            color: #EFEFEF;
+            position: absolute;
+            flex-direction: column;
+            align-items:center;
+            z-index: 1000;
+            top: 25%;
+        }
+        .title {
+            background-color: #3f3c36;
+            font-size: 30px;
+            padding: 7px 10px;
+            margin-bottom: 10px;
+            border-radius: 30px;
+            font-family: 'Luckiest Guy', cursive;
+            text-align: center;
+            text-shadow: 2px 2px 4px rgba(0,0,0,1); 
+            letter-spacing: 1.2px;
+        }
+        .label {
+          font-size: 20px;
+          margin: 7px 0 7px 0;
+          letter-spacing: 1.2px;
+        }
+        .slider {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 80%;
+          height: 15px;
+          border-radius: 10px;
+          background: #7AAFBA;
+          outline: none;
+        }
+        .slider::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 30px;
+          height: 30px;
+          border-radius: 50%;
+          background: #729C97;
+          cursor: pointer;
+          box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+        }
+        .button {
+          margin-top: 20px;
+          background-color: #7AAFBA;
+          color: #333;
+          font-size: 23px;
+          padding: 10px 30px;
+          border: none;
+          border-radius: 50px;
+          cursor: pointer;
+          box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+          transition: transform 0.1s ease;
+          font-family: 'Luckiest Guy', cursive;
+        }
+        .button:active {
+          transform: scale(0.95);
+        }
+      
+        .pause-overlay {
+        display: none;
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0, 0, 0, 0.6);
+        z-index: 999;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .pause-card {
+        background:#59544C;
+        border-radius: 25px;
+        padding:10px 25px 20px 25px;
+        text-align: center;
+        box-shadow: 0 0 15px #00000066;
+        position: absolute;
+        top: 33%;
+      }
+
+      .pause-title {
+        font-family: 'Luckiest Guy', cursive;
+        background-color: #3f3c36;
+        color: white;
+        border-radius: 30px;
+        margin-bottom: 25px;
+        font-size: 30px;
+        padding: 7px 10px;
+        letter-spacing: 1.2px;
+        display: inline-block;
+        box-shadow: 0 2px 4px #00000088;
+        text-shadow: 2px 2px 4px rgba(0,0,0,1); 
+      }
+
+      .pause-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 25px;
+      }
+
+      .pause-btn {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border: none;
+      background: #7AAFBA;
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      cursor: pointer;
+      box-shadow: 0 4px 6px #00000033;
+      transition: transform 0.2s ease;
+    }
+
+    .pause-btn img {
+      pointer-events: none;
+      user-select: none;
+      width: 30px;
+      height: 30px;
+    }
+      .pause-btn:hover {
+        transform: scale(1.1);
+        background: #729C97;
+      }
     </style>
 </head>
 <body>
+    <div class="overlay"></div>
+        <div class="panel" style="display: none;">
+            <div class="title">SETTINGS</div>
+            
+            <div class="label">SOUND</div>
+            <input type="range" class="slider" id="soundSlider" min="0" max="100" value="50">
+        
+            <div class="label">MUSIC</div>
+            <input type="range" class="slider" id="musicSlider" min="0" max="100" value="50">
+        
+            <button class="button" onclick="saveSettings()">OK</button>
+        </div>
+    </div>
 
+    <div class="pause-overlay" id="pauseOverlay">
+      <div class="pause-card">
+        <div class="pause-title">PAUSE</div>
+        <div class="pause-buttons">
+          <button id="restartBtn" class="pause-btn">
+            <img src="assets/icons/restart.svg" alt="Restart">
+          </button>
+          <button id="resumeBtn" class="pause-btn">
+            <img src="assets/icons/play.svg" alt="Resume">
+          </button>
+          <button id="homeBtn" class="pause-btn">
+            <img src="assets/icons/home.svg" alt="Home">
+          </button>
+        </div>
+      </div>
+    </div>
+    
+      
     <!-- The div where Phaser will inject the game canvas -->
     <div id="game-container"></div>
 
@@ -21,6 +210,11 @@
     <!-- Include your game's main script -->
     <!-- Ensure this script is loaded AFTER Phaser -->
     <script type="module" src="./src/main.js"></script>
-
+    <script>
+        function saveSettings() {
+          const sound = document.getElementById('soundSlider').value;
+          const music = document.getElementById('musicSlider').value;
+        }
+    </script>
 </body>
 </html>
