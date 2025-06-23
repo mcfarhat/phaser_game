@@ -32,8 +32,8 @@ export default class GameScene extends Phaser.Scene {
         // });
 
         // this.load.spritesheet('runner2', 'assets/players/player2-sprite.png', {
-        //     frameWidth: 65,
-        //     frameHeight: 55,
+        //     frameWidth: 64,
+        //     frameHeight: 59,
         //     margin: 0,
         //     spacing: 0
         // });
@@ -75,7 +75,7 @@ export default class GameScene extends Phaser.Scene {
 
         // this.load.spritesheet('runner8', 'assets/players/player8-sprite.png', {
         //     frameWidth: 195,
-        //     frameHeight: 250,
+        //     frameHeight: 270,
         //     margin: 0,
         //     spacing: 0
         // });
@@ -122,8 +122,8 @@ export default class GameScene extends Phaser.Scene {
         this.hazards = this.physics.add.group();
 
         // Create the runner
-        this.runner = this.physics.add.sprite(width * 0.2, height - 100, 'runner10');
-        this.runner.setScale(1.5);
+        this.runner = this.physics.add.sprite(width * 0.2, height - 115, 'runner10');
+        this.runner.setScale(1.8);
         this.runner.body.allowGravity = false;
         this.runner.setOrigin(0.5, 1); // Center-bottom origin
         this.runner.setDepth(10); // Ensure runner renders above items
