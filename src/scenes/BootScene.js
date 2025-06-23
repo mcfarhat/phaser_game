@@ -1,7 +1,7 @@
 // BootScene.js
 export default class BootScene extends Phaser.Scene {
     constructor() {
-        super({ key: 'BootScene' }); // Assign a unique key to the scene
+        super({ key: 'BootScene' });
     }
 
     preload() {
@@ -63,30 +63,27 @@ export default class BootScene extends Phaser.Scene {
     create() {
         console.log('BootScene: create()');
 
-        // Music
-        if (!this.sound.get('bgMusic')) {
-            this.bgMusic = this.sound.add('start-sound', { loop: true, volume: 1 });
-            this.registry.set('musicEnabled', false);
-        } else {
-            this.bgMusic = this.sound.get('bgMusic');
+        // localStorage
+        const musicEnabled = localStorage.getItem('musicEnabled') === 'false' ? false : true;
+        const soundEnabled = localStorage.getItem('soundEnabled') === 'false' ? false : true;
+        const musicVolume = parseFloat(localStorage.getItem('musicVolume') ?? '0');
+        const soundVolume = parseFloat(localStorage.getItem('soundVolume') ?? '0.5');
+
+        this.registry.set('musicEnabled', musicEnabled);
+        this.registry.set('soundEnabled', soundEnabled);
+        this.registry.set('musicVolume', musicVolume);
+        this.registry.set('soundVolume', soundVolume);
+
+        this.bgMusic = this.sound.get('bgMusic') || this.sound.add('start-sound', { loop: true, volume: musicVolume });
+
+        if (musicEnabled && !this.bgMusic.isPlaying) {
+            this.bgMusic.play();
         }
 
-        if (this.registry.get('musicEnabled')) {
-            if (!this.bgMusic.isPlaying) this.bgMusic.play();
-        }
-        
-        if (!this.registry.has('soundVolume')) {
-            this.registry.set('soundVolume', 0.5); // ✅ Default to half volume
-        }
-        
         this.clickSound = this.sound.get('click-sound') || this.sound.add('click-sound', {
-            volume: this.registry.get('soundVolume') ?? 0.5
-        });               
+            volume: soundVolume
+        });
 
         this.scene.start('StartScene');
-    }
-
-    update(time, delta) {
-        // Nothing needed here for BootScene
     }
 }

@@ -329,6 +329,26 @@ export default class GameScene extends Phaser.Scene {
         this.powerUps = this.physics.add.group();
         this.hazards = this.physics.add.group();
 
+        // Create the runner
+        this.runner = this.physics.add.sprite(width * 0.2, height - 100, 'runner4');
+        this.runner.setScale(1.2);
+        this.runner.body.allowGravity = false;
+        this.runner.setOrigin(0.5, 1); // Center-bottom origin
+        this.runner.setDepth(10); // Ensure runner renders above items
+
+        // Create animation with custom cropping
+        this.anims.create({
+            key: 'run',
+            frames: this.anims.generateFrameNumbers('runner4', { 
+                start: 0, 
+                end: 7
+            }),
+            frameRate: 10,
+            repeat: -1
+        });
+
+        this.runner.anims.play('run', true);
+
         // Spawn loops
         this.time.addEvent({
             delay: Phaser.Math.Between(2500, 4500),
