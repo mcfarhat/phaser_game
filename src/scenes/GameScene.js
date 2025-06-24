@@ -1,3 +1,4 @@
+// GameScene.js
 export default class GameScene extends Phaser.Scene {
     constructor() {
         super({ key: 'GameScene' });
@@ -6,15 +7,18 @@ export default class GameScene extends Phaser.Scene {
         this.lastSpawnedItemX = -Infinity;
         this.lastSpawnedItemY = -Infinity;
         this.minDistanceBetweenItems = 150;
-        this.minYDistanceBetweenItems = 120;
+        this.minYDistanceBetweenItems = 120; 
         this.itemSpawnHeightRange = [150, 300];
     }
 
-    preload() {
+       preload() {
         const fruitTypes = ['Avocado','Boiled Egg','Berries','Broccoli','Mango', 'Banana', 'Pineapple', 'Pomegranate', 'Proteinshake'];
         const junkTypes = ['Candy Bar','Soda','Fries','Burger', 'Hotdog', 'Donuts','Pizza'];
 
         this.load.image('background', 'assets/background.jpg');
+
+      
+        this.load.spritesheet('runner', 'assets/runner_run.png', { frameWidth: 269, frameHeight: 1024 });
 
         fruitTypes.forEach(healthy => {
             this.load.image(healthy, `assets/healthies/${healthy}.png`);
@@ -23,51 +27,23 @@ export default class GameScene extends Phaser.Scene {
         junkTypes.forEach(junk => {
             this.load.image(junk, `assets/junks/${junk}.png`);
         });
-
-        // this.load.spritesheet('runner1', 'assets/players/player1-sprite.png', {
-        //     frameWidth: 204,
-        //     frameHeight: 226,
-        //     margin: 0,
-        //     spacing: 0
-        // });
-
-        // this.load.spritesheet('runner2', 'assets/players/player2-sprite.png', {
-        //     frameWidth: 65,
-        //     frameHeight: 55,
-        //     margin: 0,
-        //     spacing: 0
-        // });
-
-        // this.load.spritesheet('runner3', 'assets/players/player3-sprite.png', {
-        //     frameWidth: 680,
-        //     frameHeight: 472,
-        //     margin: 0,
-        //     spacing: 0
-        // });
-
-        this.load.spritesheet('runner4', 'assets/players/player4-sprite.png', {
-            frameWidth: 165,
-            frameHeight: 200,
-            margin: 0,
-            spacing: 0
-        });
     }
 
     create() {
         const { width, height } = this.sys.game.config;
 
         // Moving background
-        this.background = this.add.tileSprite(0, 0, width, height, 'background')
-            .setOrigin(0, 0)
-            .setScrollFactor(0)
-            .setDepth(-1);
+        this.background = this.add.tileSprite(0, 0, 0, 0, 'background')
+        .setOrigin(0, 0)
+        .setScrollFactor(0)
+        .setDepth(-1);
 
         const bg = this.textures.get('background').getSourceImage();
-        const scaleX = width / bg.width;
-        const scaleY = height / bg.height;
-        this.background.setTileScale(scaleX, scaleY);
+        const scaleX = this.sys.game.config.width / bg.width;
+        const scaleY = this.sys.game.config.height / bg.height;
+        this.background.setScale(scaleX, scaleY);
 
-        // Score text
+        // Score
         this.scoreText = this.add.text(16, 16, 'Score: 0', {
             fontSize: '24px',
             fill: '#fff',
@@ -78,27 +54,33 @@ export default class GameScene extends Phaser.Scene {
         // Groups for fruits and junks
         this.powerUps = this.physics.add.group();
         this.hazards = this.physics.add.group();
+                                 
+        this.player = this.physics.add.sprite(150, 500, 'runner', 0);
+        
+        
+        this.player.setOrigin(0.5, 1);
+        this.player.setScale(0.35); 
+      
+        this.player.setGravityY(1200);
 
-        // Create the runner
-        this.runner = this.physics.add.sprite(width * 0.2, height - 100, 'runner4');
-        this.runner.setScale(1.2);
-        this.runner.body.allowGravity = false;
-        this.runner.setOrigin(0.5, 1); // Center-bottom origin
-        this.runner.setDepth(10); // Ensure runner renders above items
+        
+        this.player.setCollideWorldBounds(true);
 
-        // Create animation with custom cropping
-        this.anims.create({
-            key: 'run',
-            frames: this.anims.generateFrameNumbers('runner4', { 
-                start: 0, 
-                end: 7
-            }),
-            frameRate: 10,
-            repeat: -1
-        });
+      
+        this.player.body.setSize(80, 160);
+        this.player.body.setOffset(95, 840);
+        
+        
+      
+        const ground = this.add.rectangle(0, 550, width, 20, 0x000000, 0).setOrigin(0,0);
+        this.physics.add.existing(ground, true); 
+        this.physics.add.collider(this.player, ground); // Make the player stand on the ground.
 
-        this.runner.anims.play('run', true);
-        // Spawn events
+       
+        this.cursors = this.input.keyboard.createCursorKeys();
+        this.spacebar = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+
+
         this.time.addEvent({
             delay: Phaser.Math.Between(2500, 4500),
             callback: this.spawnPowerUp,
@@ -114,9 +96,34 @@ export default class GameScene extends Phaser.Scene {
         });
     }
 
-    update() {
+       update() {
         this.background.tilePositionX += this.gameSpeed;
 
+      
+        const playerSpeed = 350;
+        const jumpHeight = 600; 
+
+        
+        const onGround = this.player.body.blocked.down;
+
+       
+        if (this.cursors.left.isDown) {
+            this.player.setVelocityX(-playerSpeed);
+            this.player.setFlipX(true);
+        } else if (this.cursors.right.isDown) {
+            this.player.setVelocityX(playerSpeed);
+            this.player.setFlipX(false);
+        } else {
+            this.player.setVelocityX(0);
+        }
+
+        if (onGround) {
+            if (Phaser.Input.Keyboard.JustDown(this.spacebar)) {
+                this.player.setVelocityY(-jumpHeight);
+            }
+        }
+        
+        
         this.powerUps.getChildren().forEach(item => {
             if (item.x < -item.width) item.destroy();
         });
@@ -170,7 +177,7 @@ export default class GameScene extends Phaser.Scene {
 
         let y;
         let attempts = 0;
-        const maxAttempts = 10;
+        const maxAttempts = 10; 
 
         do {
             y = Phaser.Math.Between(this.itemSpawnHeightRange[0], this.itemSpawnHeightRange[1]);
