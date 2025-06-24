@@ -54,7 +54,7 @@ export default class GameScene extends Phaser.Scene {
         // Groups for fruits and junks
         this.powerUps = this.physics.add.group();
         this.hazards = this.physics.add.group();
-              
+                                 
         this.player = this.physics.add.sprite(150, 500, 'runner', 0);
         
         

@@ -1,6 +1,7 @@
 // Import necessary scenes
 import BootScene from './scenes/BootScene.js';
 import GameScene from './scenes/GameScene.js';
+import StartScene from './scenes/StartScene.js';
 
 // Game configuration
 const config = {
@@ -10,6 +11,7 @@ const config = {
     parent: 'game-container', // ID of the DOM element to add the game canvas to
     scene: [           // Array of scenes to load. The first scene in the array is started first.
         BootScene,
+        StartScene,
         GameScene
     ],
     physics: {
