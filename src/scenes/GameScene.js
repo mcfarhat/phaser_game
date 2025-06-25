@@ -10,7 +10,7 @@ export default class GameScene extends Phaser.Scene {
         this.minDistanceBetweenItems = 150;
         this.minYDistanceBetweenItems = 120;
         this.itemSpawnHeightRange = [150, 300];
-        this.selectedCharacter = 'runner4'; // you can change this
+        this.selectedCharacter = 'runner4'; 
     }
 
     preload() {
