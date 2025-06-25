@@ -1,3 +1,5 @@
+import { PLAYER_CONFIGS } from '../config.js';
+
 export default class GameScene extends Phaser.Scene {
     constructor() {
         super({ key: 'GameScene' });
@@ -8,6 +10,7 @@ export default class GameScene extends Phaser.Scene {
         this.minDistanceBetweenItems = 150;
         this.minYDistanceBetweenItems = 120;
         this.itemSpawnHeightRange = [150, 300];
+        this.selectedCharacter = 'runner4'; // you can change this
     }
 
     preload() {
@@ -24,24 +27,33 @@ export default class GameScene extends Phaser.Scene {
             this.load.image(junk, `assets/junks/${junk}.png`);
         });
 
-        this.load.json('characterConfigs', 'assets/charConfig.json');
+        // ✅ Preload all runners using the config array
+        PLAYER_CONFIGS.forEach(config => {
+            this.load.spritesheet(config.key, config.sprite, {
+                frameWidth: config.frameWidth,
+                frameHeight: config.frameHeight,
+                margin: 0,
+                spacing: 0
+            });
+        });
     }
 
     create() {
         const { width, height } = this.sys.game.config;
+        const config = PLAYER_CONFIGS.find(p => p.key === this.selectedCharacter);
 
-        // Moving background
+        // ✅ Background
         this.background = this.add.tileSprite(0, 0, width, height, 'background')
             .setOrigin(0, 0)
             .setScrollFactor(0)
             .setDepth(-1);
 
-        const bg = this.textures.get('background').getSourceImage();
-        const scaleX = width / bg.width;
-        const scaleY = height / bg.height;
-        this.background.setTileScale(scaleX, scaleY);
+        const bg = this.textures.get('background')?.getSourceImage();
+        if (bg) {
+            this.background.setTileScale(width / bg.width, height / bg.height);
+        }
 
-        // Score text
+        // ✅ Score
         this.scoreText = this.add.text(16, 16, 'Score: 0', {
             fontSize: '24px',
             fill: '#fff',
@@ -49,63 +61,41 @@ export default class GameScene extends Phaser.Scene {
             strokeThickness: 4
         });
 
-        // Groups for fruits and junks
         this.powerUps = this.physics.add.group();
         this.hazards = this.physics.add.group();
 
-        // Get JSON config
-        const configs = this.cache.json.get('characterConfigs');
-        const selectedCharacter = 'runner7';
-        const config = configs[selectedCharacter];
+        // ✅ Character
+        this.runner = this.physics.add.sprite(width * config.x, height - config.y, config.key);
+        this.runner.setScale(config.scale);
+        this.runner.setOrigin(0.5, 1);
+        this.runner.body.allowGravity = false;
+        this.runner.setDepth(10);
 
-        this.load.spritesheet(selectedCharacter, config.sprite, {
-            frameWidth: config.frameWidth,
-            frameHeight: config.frameHeight,
-            margin: 0,
-            spacing: 0
+        this.anims.create({
+            key: 'run',
+            frames: this.anims.generateFrameNumbers(config.key, {
+                start: 0,
+                end: config.frames - 1
+            }),
+            frameRate: 10,
+            repeat: -1
         });
 
+        this.runner.anims.play('run', true);
 
-        this.load.once('complete', () => {
-            // Create runner sprite
-            this.runner = this.physics.add.sprite(width * config.x, height - config.y, selectedCharacter);
-            this.runner.setScale(config.scale);
-            this.runner.setOrigin(0.5, 1);
-            this.runner.body.allowGravity = false;
-            this.runner.setDepth(10);
-
-            // Create the run animation
-            this.anims.create({
-                key: 'run',
-                frames: this.anims.generateFrameNumbers(selectedCharacter, {
-                    start: 0,
-                    end: config.frames - 1
-                }),
-                frameRate: 10,
-                repeat: -1
-            });
-
-            // Play the run animation
-            this.runner.anims.play('run', true);
-
-            // Set up spawn events
-            this.time.addEvent({
-                delay: Phaser.Math.Between(2500, 4500),
-                callback: this.spawnPowerUp,
-                callbackScope: this,
-                loop: true
-            });
-
-            this.time.addEvent({
-                delay: Phaser.Math.Between(2000, 4000),
-                callback: this.spawnHazard,
-                callbackScope: this,
-                loop: true
-            });
+        this.time.addEvent({
+            delay: Phaser.Math.Between(2500, 4500),
+            callback: this.spawnPowerUp,
+            callbackScope: this,
+            loop: true
         });
 
-        // Trigger loading of the sprite sheet
-        this.load.start();
+        this.time.addEvent({
+            delay: Phaser.Math.Between(2000, 4000),
+            callback: this.spawnHazard,
+            callbackScope: this,
+            loop: true
+        });
     }
 
     update() {
@@ -123,13 +113,7 @@ export default class GameScene extends Phaser.Scene {
     isTooClose(newX, newY) {
         const dx = Math.abs(newX - this.lastSpawnedItemX);
         const dy = Math.abs(newY - this.lastSpawnedItemY);
-        const itemSize = 80;
-        if (dx < this.minDistanceBetweenItems) {
-            if (dy < this.minYDistanceBetweenItems) {
-                return true;
-            }
-        }
-        return false;
+        return dx < this.minDistanceBetweenItems && dy < this.minYDistanceBetweenItems;
     }
 
     spawnPowerUp() {
