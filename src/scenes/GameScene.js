@@ -52,10 +52,10 @@ export default class GameScene extends Phaser.Scene {
             .setScrollFactor(0)
             .setDepth(-1);
 
-        const bg = this.textures.get('background').getSourceImage();
-        const scaleX = width / bg.width;
-        const scaleY = height / bg.height;
-        this.background.setTileScale(scaleX, scaleY);
+        const bg = this.textures.get('background')?.getSourceImage();
+        if (bg) {
+            this.background.setTileScale(width / bg.width, height / bg.height);
+        }
 
         // ✅ Score
         this.scoreText = this.add.text(16, 16, 'Score: 0', {
@@ -86,6 +86,33 @@ export default class GameScene extends Phaser.Scene {
         });
 
         this.runner.anims.play('run', true);
+
+                                 
+        this.player = this.physics.add.sprite(150, 500, 'runner', 0);
+        
+        
+        this.player.setOrigin(0.5, 1);
+        this.player.setScale(0.35); 
+      
+        this.player.setGravityY(1200);
+
+        
+        this.player.setCollideWorldBounds(true);
+
+      
+        this.player.body.setSize(80, 160);
+        this.player.body.setOffset(95, 840);
+        
+        
+      
+        const ground = this.add.rectangle(0, 550, width, 20, 0x000000, 0).setOrigin(0,0);
+        this.physics.add.existing(ground, true); 
+        this.physics.add.collider(this.player, ground); // Make the player stand on the ground.
+
+       
+        this.cursors = this.input.keyboard.createCursorKeys();
+        this.spacebar = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+
 
         this.time.addEvent({
             delay: Phaser.Math.Between(2500, 4500),
