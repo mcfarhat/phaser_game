@@ -1,6 +1,5 @@
 import { PLAYER_CONFIGS } from '../config.js';
 
-// GameScene.js
 export default class GameScene extends Phaser.Scene {
     constructor() {
         super({ key: 'GameScene' });
@@ -11,17 +10,14 @@ export default class GameScene extends Phaser.Scene {
         this.minDistanceBetweenItems = 150;
         this.minYDistanceBetweenItems = 120; 
         this.itemSpawnHeightRange = [150, 300];
-        this.selectedCharacter = 'runner4'; 
+        this.selectedCharacter = 'runner9'; 
     }
 
-       preload() {
+    preload() {
         const fruitTypes = ['Avocado','Boiled Egg','Berries','Broccoli','Mango', 'Banana', 'Pineapple', 'Pomegranate', 'Proteinshake'];
         const junkTypes = ['Candy Bar','Soda','Fries','Burger', 'Hotdog', 'Donuts','Pizza'];
 
         this.load.image('background', 'assets/background.jpg');
-
-      
-        this.load.spritesheet('runner', 'assets/runner_run.png', { frameWidth: 269, frameHeight: 1024 });
 
         fruitTypes.forEach(healthy => {
             this.load.image(healthy, `assets/healthies/${healthy}.png`);
@@ -31,7 +27,6 @@ export default class GameScene extends Phaser.Scene {
             this.load.image(junk, `assets/junks/${junk}.png`);
         });
 
-        // ✅ Preload all runners using the config array
         PLAYER_CONFIGS.forEach(config => {
             this.load.spritesheet(config.key, config.sprite, {
                 frameWidth: config.frameWidth,
@@ -52,9 +47,11 @@ export default class GameScene extends Phaser.Scene {
             .setScrollFactor(0)
             .setDepth(-1);
 
-        const bg = this.textures.get('background')?.getSourceImage();
-        if (bg) {
-            this.background.setTileScale(width / bg.width, height / bg.height);
+        const bgImage = this.textures.get('background')?.getSourceImage();
+        if (bgImage) {
+            const scaleX = width / bgImage.width;
+            const scaleY = height / bgImage.height;
+            this.background.setTileScale(scaleX, scaleY);
         }
 
         // ✅ Score
@@ -69,10 +66,11 @@ export default class GameScene extends Phaser.Scene {
         this.hazards = this.physics.add.group();
 
         // ✅ Character
-        this.runner = this.physics.add.sprite(width * config.x, height - config.y, config.key);
+        this.runner = this.physics.add.sprite(width * config.x, 0, config.key);
         this.runner.setScale(config.scale);
         this.runner.setOrigin(0.5, 1);
-        this.runner.body.allowGravity = false;
+        this.runner.body.allowGravity = true;
+        this.runner.setCollideWorldBounds(true);
         this.runner.setDepth(10);
 
         this.anims.create({
@@ -87,33 +85,16 @@ export default class GameScene extends Phaser.Scene {
 
         this.runner.anims.play('run', true);
 
-                                 
-        this.player = this.physics.add.sprite(150, 500, 'runner', 0);
-        
-        
-        this.player.setOrigin(0.5, 1);
-        this.player.setScale(0.35); 
-      
-        this.player.setGravityY(1200);
+        // ✅ Ground
+        const ground = this.add.rectangle(0, 470, width, 20, 0x000000, 0).setOrigin(0, 0);
+        this.physics.add.existing(ground, true);
+        this.physics.add.collider(this.runner, ground);
 
-        
-        this.player.setCollideWorldBounds(true);
-
-      
-        this.player.body.setSize(80, 160);
-        this.player.body.setOffset(95, 840);
-        
-        
-      
-        const ground = this.add.rectangle(0, 550, width, 20, 0x000000, 0).setOrigin(0,0);
-        this.physics.add.existing(ground, true); 
-        this.physics.add.collider(this.player, ground); // Make the player stand on the ground.
-
-       
+        // ✅ Controls
         this.cursors = this.input.keyboard.createCursorKeys();
         this.spacebar = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
 
-
+        // ✅ Spawn items
         this.time.addEvent({
             delay: Phaser.Math.Between(2500, 4500),
             callback: this.spawnPowerUp,
@@ -129,34 +110,29 @@ export default class GameScene extends Phaser.Scene {
         });
     }
 
-       update() {
+    update() {
         this.background.tilePositionX += this.gameSpeed;
 
-      
         const playerSpeed = 350;
-        const jumpHeight = 600; 
+        const jumpHeight = 600;
+        const onGround = this.runner.body.blocked.down;
 
-        
-        const onGround = this.player.body.blocked.down;
-
-       
+        // ✅ Movement control
         if (this.cursors.left.isDown) {
-            this.player.setVelocityX(-playerSpeed);
-            this.player.setFlipX(true);
+            this.runner.setVelocityX(-playerSpeed);
+            this.runner.setFlipX(true);
         } else if (this.cursors.right.isDown) {
-            this.player.setVelocityX(playerSpeed);
-            this.player.setFlipX(false);
+            this.runner.setVelocityX(playerSpeed);
+            this.runner.setFlipX(false);
         } else {
-            this.player.setVelocityX(0);
+            this.runner.setVelocityX(0);
         }
 
-        if (onGround) {
-            if (Phaser.Input.Keyboard.JustDown(this.spacebar)) {
-                this.player.setVelocityY(-jumpHeight);
-            }
+        if (onGround && Phaser.Input.Keyboard.JustDown(this.spacebar)) {
+            this.runner.setVelocityY(-jumpHeight);
         }
-        
-        
+
+        // ✅ Cleanup
         this.powerUps.getChildren().forEach(item => {
             if (item.x < -item.width) item.destroy();
         });
@@ -204,7 +180,7 @@ export default class GameScene extends Phaser.Scene {
 
         let y;
         let attempts = 0;
-        const maxAttempts = 10; 
+        const maxAttempts = 10;
 
         do {
             y = Phaser.Math.Between(this.itemSpawnHeightRange[0], this.itemSpawnHeightRange[1]);
