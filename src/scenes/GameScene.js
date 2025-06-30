@@ -4,21 +4,31 @@ export default class GameScene extends Phaser.Scene {
         super({ key: 'GameScene' });
         this.gameSpeed = 4;
         this.score = 0;
+        this.lives = 3;
+        this.isInvincible = false;
+        this.calories = 0;
+        this.maxGameSpeed = 10;
+        this.speedIncrement = 0.002;
+
         this.lastSpawnedItemX = -Infinity;
         this.lastSpawnedItemY = -Infinity;
         this.minDistanceBetweenItems = 150;
-        this.minYDistanceBetweenItems = 120; 
+        this.minYDistanceBetweenItems = 120;
         this.itemSpawnHeightRange = [150, 300];
     }
 
-       preload() {
-        const fruitTypes = ['Avocado','Boiled Egg','Berries','Broccoli','Mango', 'Banana', 'Pineapple', 'Pomegranate', 'Proteinshake'];
-        const junkTypes = ['Candy Bar','Soda','Fries','Burger', 'Hotdog', 'Donuts','Pizza'];
+    preload() {
+        const fruitTypes = ['Avocado', 'Boiled Egg', 'Berries', 'Broccoli', 'Mango', 'Banana', 'Pineapple', 'Pomegranate', 'Proteinshake'];
+        const junkTypes = ['Candy Bar', 'Soda', 'Fries', 'Burger', 'Hotdog', 'Donuts', 'Pizza'];
 
         this.load.image('background', 'assets/background.jpg');
 
-      
-        this.load.spritesheet('runner', 'assets/runner_run.png', { frameWidth: 269, frameHeight: 1024 });
+        // ✅ Load updated sprite sheet
+        this.load.spritesheet('runner', 'assets/players/player1-sprite.png', {
+            frameWidth: 204,
+            frameHeight: 226
+        });
+        this.load.image('heart', 'assets/ui/heart.png');
 
         fruitTypes.forEach(healthy => {
             this.load.image(healthy, `assets/healthies/${healthy}.png`);
@@ -32,54 +42,71 @@ export default class GameScene extends Phaser.Scene {
     create() {
         const { width, height } = this.sys.game.config;
 
-        // Moving background
         this.background = this.add.tileSprite(0, 0, 0, 0, 'background')
-        .setOrigin(0, 0)
-        .setScrollFactor(0)
-        .setDepth(-1);
+            .setOrigin(0, 0)
+            .setScrollFactor(0)
+            .setDepth(-1);
 
         const bg = this.textures.get('background').getSourceImage();
-        const scaleX = this.sys.game.config.width / bg.width;
-        const scaleY = this.sys.game.config.height / bg.height;
+        const scaleX = width / bg.width;
+        const scaleY = height / bg.height;
         this.background.setScale(scaleX, scaleY);
 
-        // Score
         this.scoreText = this.add.text(16, 16, 'Score: 0', {
             fontSize: '24px',
             fill: '#fff',
             stroke: '#000',
             strokeThickness: 4
         });
+        this.caloriesText = this.add.text(16, 46, 'Calories: 0', {
+    fontSize: '24px',
+    fill: '#fff',
+    stroke: '#000',
+    strokeThickness: 4
+});
 
-        // Groups for fruits and junks
+this.hearts = [];
+
+for (let i = 0; i < this.lives; i++) {
+    const heart = this.add.image(40 + i * 60, 100, 'heart').setScale(0.12).setScrollFactor(0);
+    this.hearts.push(heart);
+}
+
+
+
         this.powerUps = this.physics.add.group();
         this.hazards = this.physics.add.group();
-                                 
+
+        // ✅ Create and animate player
         this.player = this.physics.add.sprite(150, 500, 'runner', 0);
-        
-        
         this.player.setOrigin(0.5, 1);
-        this.player.setScale(0.35); 
-      
+        this.player.setScale(1);
         this.player.setGravityY(1200);
-
-        
         this.player.setCollideWorldBounds(true);
+        this.jumps = 0;
+        this.maxJumps = 2;
 
-      
+
         this.player.body.setSize(80, 160);
-        this.player.body.setOffset(95, 840);
-        
-        
-      
-        const ground = this.add.rectangle(0, 550, width, 20, 0x000000, 0).setOrigin(0,0);
-        this.physics.add.existing(ground, true); 
-        this.physics.add.collider(this.player, ground); // Make the player stand on the ground.
+        this.player.body.setOffset(60, 70); // Adjust if needed
 
-       
+        this.anims.create({
+            key: 'run',
+            frames: this.anims.generateFrameNumbers('runner', { start: 0, end: 3 }),
+            frameRate: 10,
+            repeat: -1
+        });
+        this.player.play('run');
+
+        const ground = this.add.rectangle(0, 550, width, 20, 0x000000, 0).setOrigin(0, 0);
+        this.physics.add.existing(ground, true);
+        this.physics.add.collider(this.player, ground);
+
         this.cursors = this.input.keyboard.createCursorKeys();
         this.spacebar = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
-
+ // ✅ Add collision detection between player and items
+this.physics.add.overlap(this.player, this.powerUps, this.collectItem, null, this);
+this.physics.add.overlap(this.player, this.hazards, this.hitHazard, null, this);
 
         this.time.addEvent({
             delay: Phaser.Math.Between(2500, 4500),
@@ -96,17 +123,20 @@ export default class GameScene extends Phaser.Scene {
         });
     }
 
-       update() {
-        this.background.tilePositionX += this.gameSpeed;
+    update() {
+       
+    // 🔼 Gradually increase game speed up to the cap
+    if (this.gameSpeed < this.maxGameSpeed) {
+        this.gameSpeed += this.speedIncrement;
+    }
 
-      
+    this.background.tilePositionX += this.gameSpeed;
+
+
         const playerSpeed = 350;
-        const jumpHeight = 600; 
-
-        
+        const jumpHeight = 600;
         const onGround = this.player.body.blocked.down;
 
-       
         if (this.cursors.left.isDown) {
             this.player.setVelocityX(-playerSpeed);
             this.player.setFlipX(true);
@@ -117,13 +147,16 @@ export default class GameScene extends Phaser.Scene {
             this.player.setVelocityX(0);
         }
 
-        if (onGround) {
-            if (Phaser.Input.Keyboard.JustDown(this.spacebar)) {
-                this.player.setVelocityY(-jumpHeight);
-            }
-        }
-        
-        
+       if (onGround) {
+    this.jumps = 0; // Reset jump count when player touches the ground
+}
+
+if (Phaser.Input.Keyboard.JustDown(this.spacebar) && this.jumps < this.maxJumps) {
+    this.player.setVelocityY(-jumpHeight);
+    this.jumps++;
+}
+
+
         this.powerUps.getChildren().forEach(item => {
             if (item.x < -item.width) item.destroy();
         });
@@ -136,17 +169,11 @@ export default class GameScene extends Phaser.Scene {
     isTooClose(newX, newY) {
         const dx = Math.abs(newX - this.lastSpawnedItemX);
         const dy = Math.abs(newY - this.lastSpawnedItemY);
-        const itemSize = 80;
-        if (dx < this.minDistanceBetweenItems) {
-            if (dy < this.minYDistanceBetweenItems) {
-                return true;
-            }
-        }
-        return false;
+        return dx < this.minDistanceBetweenItems && dy < this.minYDistanceBetweenItems;
     }
 
     spawnPowerUp() {
-        const fruitTypes = ['Avocado','Boiled Egg','Berries','Broccoli','Mango', 'Banana', 'Pineapple', 'Pomegranate', 'Proteinshake'];
+        const fruitTypes = ['Avocado', 'Boiled Egg', 'Berries', 'Broccoli', 'Mango', 'Banana', 'Pineapple', 'Pomegranate', 'Proteinshake'];
         const key = Phaser.Utils.Array.GetRandom(fruitTypes);
         const currentX = this.sys.game.config.width + 50;
 
@@ -155,7 +182,7 @@ export default class GameScene extends Phaser.Scene {
         const maxAttempts = 10;
 
         do {
-            y = Phaser.Math.Between(this.itemSpawnHeightRange[0], this.itemSpawnHeightRange[1]);
+            y = Phaser.Math.Between(...this.itemSpawnHeightRange);
             attempts++;
         } while (this.isTooClose(currentX, y) && attempts < maxAttempts);
 
@@ -171,16 +198,16 @@ export default class GameScene extends Phaser.Scene {
     }
 
     spawnHazard() {
-        const junkTypes = ['Fries','Burger', 'Hotdog', 'Donuts', 'Pizza'];
+        const junkTypes = ['Fries', 'Burger', 'Hotdog', 'Donuts', 'Pizza'];
         const key = Phaser.Utils.Array.GetRandom(junkTypes);
         const currentX = this.sys.game.config.width + 100;
 
         let y;
         let attempts = 0;
-        const maxAttempts = 10; 
+        const maxAttempts = 10;
 
         do {
-            y = Phaser.Math.Between(this.itemSpawnHeightRange[0], this.itemSpawnHeightRange[1]);
+            y = Phaser.Math.Between(...this.itemSpawnHeightRange);
             attempts++;
         } while (this.isTooClose(currentX, y) && attempts < maxAttempts);
 
@@ -194,4 +221,72 @@ export default class GameScene extends Phaser.Scene {
         this.lastSpawnedItemX = currentX;
         this.lastSpawnedItemY = y;
     }
+    collectItem(player, item) {
+    item.destroy();
+    this.score += 10;
+    this.calories += 5;
+
+    this.scoreText.setText('Score: ' + this.score);
+    this.caloriesText.setText('Calories: ' + this.calories);
+}
+
+hitHazard(player, hazard) {
+    if (this.isInvincible) return;
+    this.cameras.main.shake(200, 0.01); // Add inside hitHazard()
+
+
+    hazard.destroy();
+    this.lives -= 1;
+   if (this.lives >= 0 && this.hearts[this.lives]) {
+    const heart = this.hearts[this.lives];
+    this.tweens.add({
+        targets: heart,
+        scaleX: 1.5,
+        scaleY: 1.5,
+        alpha: 0,
+        duration: 300,
+        yoyo: false,
+        ease: 'Cubic.easeOut',
+        onComplete: () => {
+            heart.setVisible(false);
+            heart.setScale(0.12);  // reset scale for possible future use
+            heart.setAlpha(1);      // reset alpha too
+        }
+    });
+}
+
+
+
+    this.isInvincible = true;
+
+    // Brief invincibility (e.g., 1.5 seconds)
+    this.time.delayedCall(1500, () => {
+        this.isInvincible = false;
+    });
+
+    // Flash effect to indicate damage
+    this.tweens.add({
+        targets: this.player,
+        alpha: 0.5,
+        yoyo: true,
+        repeat: 5,
+        duration: 100,
+        onComplete: () => {
+            this.player.setAlpha(1);
+        }
+    });
+
+    if (this.lives <= 0) {
+        this.physics.pause();
+        this.player.setTint(0xff0000);
+        this.add.text(this.sys.game.config.width / 2, this.sys.game.config.height / 2, 'GAME OVER', {
+            fontSize: '48px',
+            fill: '#fff',
+            stroke: '#000',
+            strokeThickness: 6
+        }).setOrigin(0.5);
+    }
+}
+
+
 }

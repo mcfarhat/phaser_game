@@ -3,6 +3,8 @@ import BootScene from './scenes/BootScene.js';
 import GameScene from './scenes/GameScene.js';
 import StartScene from './scenes/StartScene.js';
 
+
+
 // Game configuration
 const config = {
     type: Phaser.AUTO, // Automatically choose WebGL or Canvas
