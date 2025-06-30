@@ -11,60 +11,31 @@ export default class GameScene extends Phaser.Scene {
     }
     
 
-    preload() {
-
-        // this.load.spritesheet('runner1', 'assets/players/player1-sprite.png', {
-        //     frameWidth: 204,
-        //     frameHeight: 226,
-        //     margin: 0,
-        //     spacing: 0
-        // });
-
-        // this.load.spritesheet('runner2', 'assets/players/player2-sprite.png', {
-        //     frameWidth: 65,
-        //     frameHeight: 55,
-        //     margin: 0,
-        //     spacing: 0
-        // });
-
-        // this.load.spritesheet('runner3', 'assets/players/player3-sprite.png', {
-        //     frameWidth: 680,
-        //     frameHeight: 472,
-        //     margin: 0,
-        //     spacing: 0
-        // });
-
-        this.load.spritesheet('runner4', 'assets/players/player4-sprite.png', {
-            frameWidth: 165,
-            frameHeight: 200,
-            margin: 0,
-            spacing: 0
-        });
-    }
+    preload() {}
 
 
     create() {
         const { width, height } = this.sys.game.config;
         this.isPaused = false;
-
+        
         // Pause pannel
         const pauseOverlay = document.getElementById('pauseOverlay');
-        const resumeBtn = document.getElementById('resumeBtn');
+        const closePauseBtn = document.getElementById('closePauseBtn');
         const restartBtn = document.getElementById('restartBtn');
         const homeBtn = document.getElementById('homeBtn');
 
-        if (resumeBtn && !resumeBtn.hasClickListener) {
-            resumeBtn.addEventListener('click', () => {
+        if (closePauseBtn && !closePauseBtn.hasClickListener) {
+            closePauseBtn.addEventListener('click', () => {
                 if (this.clickSound) this.clickSound.play();
                 pauseOverlay.style.display = 'none';
-                this.togglePause(false);
+                this.togglePause(false); 
             });
-            resumeBtn.hasClickListener = true;
+            closePauseBtn.hasClickListener = true;
         }
 
         if (restartBtn && !restartBtn.hasClickListener) {
             restartBtn.addEventListener('click', () => {
-                if (this.clickSound) this.clickSound.play(); 
+                if (this.clickSound) this.clickSound.play();
                 pauseOverlay.style.display = 'none';
                 this.scene.restart();
             });
@@ -87,11 +58,32 @@ export default class GameScene extends Phaser.Scene {
         const bg = this.textures.get('background').getSourceImage();
         this.background.setScale(width / bg.width, height / bg.height);
 
+        this.score = 0;
         this.calories = 0;
         this.distance = 0;
         this.startTime = this.time.now;
 
-        this.caloriesText = this.add.text(16, 7, 'CALORIES: 0', 
+        this.scoreText = this.add.text(10, 7, 'SCORE: 0', 
+        { 
+            fontSize: '19px', 
+            fill: '#fff', 
+            fontFamily: 'Arial', 
+            fontStyle: 'bold',
+
+            stroke: '#729C97',
+            strokeThickness: 1.5,
+            shadow: {
+                offsetX: 1,
+                offsetY: 1,
+                color: '#000',
+                blur: 4,
+                stroke: true,
+                fill: true
+            } 
+        }).setScrollFactor(0);
+        this.scoreText.setResolution(3);
+
+        this.caloriesText = this.add.text(130, 7, 'CALORIES: 0', 
         { 
             fontSize: '19px', 
             fill: '#fff', 
@@ -111,7 +103,7 @@ export default class GameScene extends Phaser.Scene {
         }).setScrollFactor(0);
         this.caloriesText.setResolution(3);
 
-        this.timerText = this.add.text(200, 7, 'Time: 0 s', 
+        this.timerText = this.add.text(280, 7, 'Time: 0 s', 
         { 
             fontSize: '19px', 
             fill: '#fff', 
@@ -130,7 +122,7 @@ export default class GameScene extends Phaser.Scene {
         }).setScrollFactor(0);
         this.timerText.setResolution(3);
 
-        this.distanceText = this.add.text(350, 7, 'Distance: 0 m', 
+        this.distanceText = this.add.text(400, 7, 'Distance: 0 m', 
         { 
             fontSize: '19px', 
             fill: '#fff', 
@@ -147,8 +139,18 @@ export default class GameScene extends Phaser.Scene {
                 fill: true
             } 
         }).setScrollFactor(0);  
-        this.distanceText.setResolution(3);      
+        this.distanceText.setResolution(3);   
         
+        this.hearts = [];
+
+        for (let i = 0; i < 3; i++) {
+            const heart = this.add.image(600 + i * 35, 17, 'heart') // adjust position as needed
+                .setScale(0.040) // scale to fit nicely
+                .setScrollFactor(0); // fix to camera
+
+            this.hearts.push(heart);
+        }
+
         this.motivationText = this.add.text(400, 100, '', {
             fontSize: '30px', fontFamily: 'Luckiest Guy', fill: '#7AAFBA'
         }).setAlpha(0);
@@ -227,12 +229,19 @@ export default class GameScene extends Phaser.Scene {
 
         settingsBtn.on('pointerdown', () => {
             if (this.clickSound) this.clickSound.play();
+        
+            // Pause the game
+            this.togglePause(true);
+        
+            // Show settings panel
             document.querySelector('.overlay').style.display = 'block';
             document.querySelector('.panel').style.display = 'flex';
-
+        
+            // Sync slider values
             document.getElementById('musicSlider').value = (this.registry.get('musicVolume') ?? 0) * 100;
             document.getElementById('soundSlider').value = (this.registry.get('soundVolume') ?? 0.5) * 100;
         });
+        
 
         //OK button
         const okButton = document.querySelector('.panel .button');
@@ -272,6 +281,9 @@ export default class GameScene extends Phaser.Scene {
 
                 document.querySelector('.overlay').style.display = 'none';
                 document.querySelector('.panel').style.display = 'none';
+
+                this.togglePause(false);
+
             });
             okButton.hasClickListener = true;
         }
@@ -348,14 +360,13 @@ export default class GameScene extends Phaser.Scene {
         });
 
         this.runner.anims.play('run', true);
-
-        // Spawn loops
-        this.time.addEvent({
+        // Spawn events
+        this.powerUpTimer = this.time.addEvent({
             delay: Phaser.Math.Between(2500, 4500),
             loop: true,
             callback: () => { if (!this.isPaused) this.spawnPowerUp(); }
         });
-
+        
         this.hazardTimer = this.time.addEvent({
             delay: Phaser.Math.Between(2000, 4000),
             loop: true,
@@ -384,16 +395,42 @@ export default class GameScene extends Phaser.Scene {
         const deltaSeconds = delta / 1000;
         this.distance += this.gameSpeed * deltaSeconds / 10;
         this.caloriesText.setText('CALORIES: 0');
+        this.scoreText.setText('SCORE: 0');
         this.distanceText.setText('DISTANCE: ' + Math.floor(this.distance) + ' m');
     }
 
     togglePause(pause) {
         this.isPaused = pause;
-        this.pausePanel.setVisible(pause);
+    
         this.physics.world.isPaused = pause;
         this.powerUpTimer.paused = pause;
         this.hazardTimer.paused = pause;
         this.motivationTimer.paused = pause;
+    
+        if (pause) {
+            this.runner.anims.pause();
+        } else {
+            this.runner.anims.resume();
+        }
+    
+        this.powerUps.getChildren().forEach(powerUp => {
+            if (pause) {
+                powerUp.originalVelocity = powerUp.body.velocity.x;
+                powerUp.body.setVelocityX(0);
+            } else if (powerUp.originalVelocity !== undefined) {
+                powerUp.body.setVelocityX(powerUp.originalVelocity);
+            }
+        });
+    
+        this.hazards.getChildren().forEach(hazard => {
+            if (pause) {
+                hazard.originalVelocity = hazard.body.velocity.x;
+                hazard.body.setVelocityX(0);
+            } else if (hazard.originalVelocity !== undefined) {
+                hazard.body.setVelocityX(hazard.originalVelocity);
+            }
+        });
+    
         this.pauseButton.disableInteractive();
         if (!pause) {
             this.pauseButton.setInteractive({ useHandCursor: true });
@@ -402,7 +439,8 @@ export default class GameScene extends Phaser.Scene {
             }
         }
     }
-
+    
+    
     isTooClose(newX, newY) {
         const dx = Math.abs(newX - this.lastSpawnedItemX);
         const dy = Math.abs(newY - this.lastSpawnedItemY);
