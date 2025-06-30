@@ -89,6 +89,8 @@ export default class BootScene extends Phaser.Scene {
 
         this.load.image('heart', 'assets/heart.svg');
 
+        this.load.spritesheet('runner', 'assets/runner_run.png', { frameWidth: 269, frameHeight: 1024 });
+
     }
 
     create() {

@@ -1,3 +1,4 @@
+// GameScene.js
 export default class GameScene extends Phaser.Scene {
     constructor() {
         super({ key: 'GameScene' });
@@ -5,7 +6,7 @@ export default class GameScene extends Phaser.Scene {
         this.lastSpawnedItemX = -Infinity;
         this.lastSpawnedItemY = -Infinity;
         this.minDistanceBetweenItems = 150;
-        this.minYDistanceBetweenItems = 120;
+        this.minYDistanceBetweenItems = 120; 
         this.itemSpawnHeightRange = [150, 300];
         this.selectedVoice = null;
     }
@@ -340,26 +341,32 @@ export default class GameScene extends Phaser.Scene {
         // Groups
         this.powerUps = this.physics.add.group();
         this.hazards = this.physics.add.group();
+                                 
+        this.player = this.physics.add.sprite(150, 500, 'runner', 0);
+        
+        
+        this.player.setOrigin(0.5, 1);
+        this.player.setScale(0.35); 
+      
+        this.player.setGravityY(1200);
 
-        // Create the runner
-        this.runner = this.physics.add.sprite(width * 0.2, height - 100, 'runner4');
-        this.runner.setScale(1.2);
-        this.runner.body.allowGravity = false;
-        this.runner.setOrigin(0.5, 1); // Center-bottom origin
-        this.runner.setDepth(10); // Ensure runner renders above items
+        
+        this.player.setCollideWorldBounds(true);
 
-        // Create animation with custom cropping
-        this.anims.create({
-            key: 'run',
-            frames: this.anims.generateFrameNumbers('runner4', { 
-                start: 0, 
-                end: 7
-            }),
-            frameRate: 10,
-            repeat: -1
-        });
+      
+        this.player.body.setSize(80, 160);
+        this.player.body.setOffset(95, 840);
+        
+        
+      
+        const ground = this.add.rectangle(0, 550, width, 20, 0x000000, 0).setOrigin(0,0);
+        this.physics.add.existing(ground, true); 
+        this.physics.add.collider(this.player, ground); // Make the player stand on the ground.
 
-        this.runner.anims.play('run', true);
+       
+        this.cursors = this.input.keyboard.createCursorKeys();
+        this.spacebar = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+
         // Spawn events
         this.powerUpTimer = this.time.addEvent({
             delay: Phaser.Math.Between(2500, 4500),
@@ -383,6 +390,31 @@ export default class GameScene extends Phaser.Scene {
 
         this.background.tilePositionX += this.gameSpeed;
 
+      
+        const playerSpeed = 350;
+        const jumpHeight = 600; 
+
+        
+        const onGround = this.player.body.blocked.down;
+
+       
+        if (this.cursors.left.isDown) {
+            this.player.setVelocityX(-playerSpeed);
+            this.player.setFlipX(true);
+        } else if (this.cursors.right.isDown) {
+            this.player.setVelocityX(playerSpeed);
+            this.player.setFlipX(false);
+        } else {
+            this.player.setVelocityX(0);
+        }
+
+        if (onGround) {
+            if (Phaser.Input.Keyboard.JustDown(this.spacebar)) {
+                this.player.setVelocityY(-jumpHeight);
+            }
+        }
+        
+        
         this.powerUps.getChildren().forEach(item => {
             if (item.x < -item.width) item.destroy();
         });
