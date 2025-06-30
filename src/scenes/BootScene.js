@@ -107,7 +107,7 @@ export default class BootScene extends Phaser.Scene {
         this.registry.set('musicVolume', musicVolume);
         this.registry.set('soundVolume', soundVolume);
 
-        this.bgMusic = this.sound.get('bgMusic') || this.sound.add('start-sound', { loop: true, volume: musicVolume });
+        this.bgMusic = this.sound.get('start-sound') || this.sound.add('start-sound', { loop: true, volume: musicVolume });
 
         if (musicEnabled && !this.bgMusic.isPlaying) {
             this.bgMusic.play();

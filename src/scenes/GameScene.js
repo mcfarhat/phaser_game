@@ -182,7 +182,7 @@ export default class GameScene extends Phaser.Scene {
             this.bgMusic.play({ loop: true, volume: this.registry.get('musicVolume') });
         }
 
-        this.voiceEnabled = this.registry.get('soundEnabled') ?? true;
+        this.voiceEnabled = this.registry.get('soundEnabled');
 
         // Pause button
         this.pauseButton = this.add.text(width - 37, 1, '⏸', {
@@ -230,19 +230,25 @@ export default class GameScene extends Phaser.Scene {
 
         settingsBtn.on('pointerdown', () => {
             if (this.clickSound) this.clickSound.play();
-        
-            // Pause the game
-            this.togglePause(true);
-        
+
             // Show settings panel
             document.querySelector('.overlay').style.display = 'block';
             document.querySelector('.panel').style.display = 'flex';
-        
-            // Sync slider values
-            document.getElementById('musicSlider').value = (this.registry.get('musicVolume') ?? 0) * 100;
-            document.getElementById('soundSlider').value = (this.registry.get('soundVolume') ?? 0.5) * 100;
+
+            // Pause the game
+            this.togglePause(true);
+
+            // Set slider values strictly from registry (no fallback)
+            const musicSlider = document.getElementById('musicSlider');
+            const soundSlider = document.getElementById('soundSlider');
+
+            if (musicSlider) {
+                musicSlider.value = this.registry.get('musicVolume') * 100;
+            }
+            if (soundSlider) {
+                soundSlider.value = this.registry.get('soundVolume') * 100;
+            }
         });
-        
 
         //OK button
         const okButton = document.querySelector('.panel .button');
@@ -367,6 +373,8 @@ export default class GameScene extends Phaser.Scene {
         this.cursors = this.input.keyboard.createCursorKeys();
         this.spacebar = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
 
+
+        // this.runner.anims.play('run', true);
         // Spawn events
         this.powerUpTimer = this.time.addEvent({
             delay: Phaser.Math.Between(2500, 4500),
