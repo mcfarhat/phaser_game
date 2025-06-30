@@ -16,6 +16,7 @@ export default class GameScene extends Phaser.Scene {
     preload() {
         const fruitTypes = ['Avocado','Boiled Egg','Berries','Broccoli','Mango', 'Banana', 'Pineapple', 'Pomegranate', 'Proteinshake'];
         const junkTypes = ['Candy Bar','Soda','Fries','Burger', 'Hotdog', 'Donuts','Pizza'];
+        const obstacleTypes = ['dumbell', 'gym-bench', 'gym-plates', 'jump-rope', 'kettlebell', 'rock', 'tire-stack'];
 
         this.load.image('background', 'assets/background.jpg');
 
@@ -25,6 +26,10 @@ export default class GameScene extends Phaser.Scene {
 
         junkTypes.forEach(junk => {
             this.load.image(junk, `assets/junks/${junk}.png`);
+        });
+
+        obstacleTypes.forEach(obstacle => {
+            this.load.image(obstacle, `assets/obstacles/${obstacle}.png`);
         });
 
         PLAYER_CONFIGS.forEach(config => {
@@ -64,6 +69,7 @@ export default class GameScene extends Phaser.Scene {
 
         this.powerUps = this.physics.add.group();
         this.hazards = this.physics.add.group();
+        this.obstacles = this.physics.add.group();
 
         // ✅ Character
         this.runner = this.physics.add.sprite(width * config.x, 0, config.key);
@@ -108,6 +114,14 @@ export default class GameScene extends Phaser.Scene {
             callbackScope: this,
             loop: true
         });
+
+        this.time.addEvent({
+            delay: Phaser.Math.Between(2500, 5000),
+            callback: this.spawnObstacle,
+            callbackScope: this,
+            loop: true
+        });
+
     }
 
     update() {
@@ -196,5 +210,20 @@ export default class GameScene extends Phaser.Scene {
 
         this.lastSpawnedItemX = currentX;
         this.lastSpawnedItemY = y;
+    }
+
+    spawnObstacle() {
+        const obstacleTypes = ['dumbell', 'gym-bench', 'gym-plates', 'jump-rope', 'kettlebell', 'rock', 'tire-stack'];
+        const key = Phaser.Utils.Array.GetRandom(obstacleTypes);
+        const currentX = this.sys.game.config.width + 50;
+        const y = 480; // Make sure this matches your ground Y
+
+        const obstacle = this.obstacles.create(currentX, y, key);
+        obstacle.setVelocityX(-this.gameSpeed * 50);
+        obstacle.setDisplaySize(110, 110); // You can adjust this per asset
+        obstacle.setOrigin(0.5, 1);
+        obstacle.body.allowGravity = false;
+        obstacle.setImmovable(true);
+        obstacle.setDepth(5);
     }
 }
