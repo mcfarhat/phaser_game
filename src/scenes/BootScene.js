@@ -58,6 +58,39 @@ export default class BootScene extends Phaser.Scene {
         this.load.image('start-bg', 'assets/start-background.jpg');
         this.load.audio('start-sound', 'assets/sounds/music.mp3');
         this.load.audio('click-sound', 'assets/sounds/click.mp3');
+
+        // this.load.spritesheet('runner1', 'assets/players/player1-sprite.png', {
+        //     frameWidth: 204,
+        //     frameHeight: 226,
+        //     margin: 0,
+        //     spacing: 0
+        // });
+
+        // this.load.spritesheet('runner2', 'assets/players/player2-sprite.png', {
+        //     frameWidth: 65,
+        //     frameHeight: 55,
+        //     margin: 0,
+        //     spacing: 0
+        // });
+
+        // this.load.spritesheet('runner3', 'assets/players/player3-sprite.png', {
+        //     frameWidth: 680,
+        //     frameHeight: 472,
+        //     margin: 0,
+        //     spacing: 0
+        // });
+
+        this.load.spritesheet('runner4', 'assets/players/player4-sprite.png', {
+            frameWidth: 165,
+            frameHeight: 200,
+            margin: 0,
+            spacing: 0
+        });
+
+        this.load.image('heart', 'assets/heart.svg');
+
+        this.load.spritesheet('runner', 'assets/runner_run.png', { frameWidth: 269, frameHeight: 1024 });
+
     }
 
     create() {
@@ -74,7 +107,7 @@ export default class BootScene extends Phaser.Scene {
         this.registry.set('musicVolume', musicVolume);
         this.registry.set('soundVolume', soundVolume);
 
-        this.bgMusic = this.sound.get('bgMusic') || this.sound.add('start-sound', { loop: true, volume: musicVolume });
+        this.bgMusic = this.sound.get('start-sound') || this.sound.add('start-sound', { loop: true, volume: musicVolume });
 
         if (musicEnabled && !this.bgMusic.isPlaying) {
             this.bgMusic.play();
