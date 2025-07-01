@@ -8,7 +8,7 @@ export default class GameScene extends Phaser.Scene {
         this.calories = 0;
         this.maxGameSpeed = 10;
         this.speedIncrement = 0.002;
-        this.isGameOver = false; // ✅ New flag
+        this.isGameOver = false; 
 
         this.lastSpawnedItemX = -Infinity;
         this.lastSpawnedItemY = -Infinity;
