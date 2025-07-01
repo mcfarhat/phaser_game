@@ -1,4 +1,3 @@
-// GameScene.js
 export default class GameScene extends Phaser.Scene {
     constructor() {
         super({ key: 'GameScene' });
@@ -9,6 +8,7 @@ export default class GameScene extends Phaser.Scene {
         this.calories = 0;
         this.maxGameSpeed = 10;
         this.speedIncrement = 0.002;
+        this.isGameOver = false; // ✅ New flag
 
         this.lastSpawnedItemX = -Infinity;
         this.lastSpawnedItemY = -Infinity;
@@ -22,8 +22,6 @@ export default class GameScene extends Phaser.Scene {
         const junkTypes = ['Candy Bar', 'Soda', 'Fries', 'Burger', 'Hotdog', 'Donuts', 'Pizza'];
 
         this.load.image('background', 'assets/background.jpg');
-
-        // ✅ Load updated sprite sheet
         this.load.spritesheet('runner', 'assets/players/player1-sprite.png', {
             frameWidth: 204,
             frameHeight: 226
@@ -58,26 +56,23 @@ export default class GameScene extends Phaser.Scene {
             stroke: '#000',
             strokeThickness: 4
         });
+
         this.caloriesText = this.add.text(16, 46, 'Calories: 0', {
-    fontSize: '24px',
-    fill: '#fff',
-    stroke: '#000',
-    strokeThickness: 4
-});
+            fontSize: '24px',
+            fill: '#fff',
+            stroke: '#000',
+            strokeThickness: 4
+        });
 
-this.hearts = [];
-
-for (let i = 0; i < this.lives; i++) {
-    const heart = this.add.image(40 + i * 60, 100, 'heart').setScale(0.12).setScrollFactor(0);
-    this.hearts.push(heart);
-}
-
-
+        this.hearts = [];
+        for (let i = 0; i < this.lives; i++) {
+            const heart = this.add.image(40 + i * 60, 100, 'heart').setScale(0.12).setScrollFactor(0);
+            this.hearts.push(heart);
+        }
 
         this.powerUps = this.physics.add.group();
         this.hazards = this.physics.add.group();
 
-        // ✅ Create and animate player
         this.player = this.physics.add.sprite(150, 500, 'runner', 0);
         this.player.setOrigin(0.5, 1);
         this.player.setScale(1);
@@ -86,9 +81,8 @@ for (let i = 0; i < this.lives; i++) {
         this.jumps = 0;
         this.maxJumps = 2;
 
-
         this.player.body.setSize(80, 160);
-        this.player.body.setOffset(60, 70); // Adjust if needed
+        this.player.body.setOffset(60, 70);
 
         this.anims.create({
             key: 'run',
@@ -104,9 +98,9 @@ for (let i = 0; i < this.lives; i++) {
 
         this.cursors = this.input.keyboard.createCursorKeys();
         this.spacebar = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
- // ✅ Add collision detection between player and items
-this.physics.add.overlap(this.player, this.powerUps, this.collectItem, null, this);
-this.physics.add.overlap(this.player, this.hazards, this.hitHazard, null, this);
+
+        this.physics.add.overlap(this.player, this.powerUps, this.collectItem, null, this);
+        this.physics.add.overlap(this.player, this.hazards, this.hitHazard, null, this);
 
         this.time.addEvent({
             delay: Phaser.Math.Between(2500, 4500),
@@ -124,14 +118,13 @@ this.physics.add.overlap(this.player, this.hazards, this.hitHazard, null, this);
     }
 
     update() {
-       
-    // 🔼 Gradually increase game speed up to the cap
-    if (this.gameSpeed < this.maxGameSpeed) {
-        this.gameSpeed += this.speedIncrement;
-    }
+        if (this.isGameOver) return; // ✅ Stop game logic after game over
 
-    this.background.tilePositionX += this.gameSpeed;
+        if (this.gameSpeed < this.maxGameSpeed) {
+            this.gameSpeed += this.speedIncrement;
+        }
 
+        this.background.tilePositionX += this.gameSpeed;
 
         const playerSpeed = 350;
         const jumpHeight = 600;
@@ -147,15 +140,12 @@ this.physics.add.overlap(this.player, this.hazards, this.hitHazard, null, this);
             this.player.setVelocityX(0);
         }
 
-       if (onGround) {
-    this.jumps = 0; // Reset jump count when player touches the ground
-}
+        if (onGround) this.jumps = 0;
 
-if (Phaser.Input.Keyboard.JustDown(this.spacebar) && this.jumps < this.maxJumps) {
-    this.player.setVelocityY(-jumpHeight);
-    this.jumps++;
-}
-
+        if (Phaser.Input.Keyboard.JustDown(this.spacebar) && this.jumps < this.maxJumps) {
+            this.player.setVelocityY(-jumpHeight);
+            this.jumps++;
+        }
 
         this.powerUps.getChildren().forEach(item => {
             if (item.x < -item.width) item.destroy();
@@ -173,6 +163,7 @@ if (Phaser.Input.Keyboard.JustDown(this.spacebar) && this.jumps < this.maxJumps)
     }
 
     spawnPowerUp() {
+        if (this.isGameOver) return; // ✅ Prevent spawning after game over
         const fruitTypes = ['Avocado', 'Boiled Egg', 'Berries', 'Broccoli', 'Mango', 'Banana', 'Pineapple', 'Pomegranate', 'Proteinshake'];
         const key = Phaser.Utils.Array.GetRandom(fruitTypes);
         const currentX = this.sys.game.config.width + 50;
@@ -198,6 +189,7 @@ if (Phaser.Input.Keyboard.JustDown(this.spacebar) && this.jumps < this.maxJumps)
     }
 
     spawnHazard() {
+        if (this.isGameOver) return; // ✅ Prevent spawning after game over
         const junkTypes = ['Fries', 'Burger', 'Hotdog', 'Donuts', 'Pizza'];
         const key = Phaser.Utils.Array.GetRandom(junkTypes);
         const currentX = this.sys.game.config.width + 100;
@@ -221,72 +213,91 @@ if (Phaser.Input.Keyboard.JustDown(this.spacebar) && this.jumps < this.maxJumps)
         this.lastSpawnedItemX = currentX;
         this.lastSpawnedItemY = y;
     }
+
     collectItem(player, item) {
-    item.destroy();
-    this.score += 10;
-    this.calories += 5;
-
-    this.scoreText.setText('Score: ' + this.score);
-    this.caloriesText.setText('Calories: ' + this.calories);
-}
-
-hitHazard(player, hazard) {
-    if (this.isInvincible) return;
-    this.cameras.main.shake(200, 0.01); // Add inside hitHazard()
-
-
-    hazard.destroy();
-    this.lives -= 1;
-   if (this.lives >= 0 && this.hearts[this.lives]) {
-    const heart = this.hearts[this.lives];
-    this.tweens.add({
-        targets: heart,
-        scaleX: 1.5,
-        scaleY: 1.5,
-        alpha: 0,
-        duration: 300,
-        yoyo: false,
-        ease: 'Cubic.easeOut',
-        onComplete: () => {
-            heart.setVisible(false);
-            heart.setScale(0.12);  // reset scale for possible future use
-            heart.setAlpha(1);      // reset alpha too
-        }
-    });
-}
-
-
-
-    this.isInvincible = true;
-
-    // Brief invincibility (e.g., 1.5 seconds)
-    this.time.delayedCall(1500, () => {
-        this.isInvincible = false;
-    });
-
-    // Flash effect to indicate damage
-    this.tweens.add({
-        targets: this.player,
-        alpha: 0.5,
-        yoyo: true,
-        repeat: 5,
-        duration: 100,
-        onComplete: () => {
-            this.player.setAlpha(1);
-        }
-    });
-
-    if (this.lives <= 0) {
-        this.physics.pause();
-        this.player.setTint(0xff0000);
-        this.add.text(this.sys.game.config.width / 2, this.sys.game.config.height / 2, 'GAME OVER', {
-            fontSize: '48px',
-            fill: '#fff',
-            stroke: '#000',
-            strokeThickness: 6
-        }).setOrigin(0.5);
+        if (this.isGameOver) return;
+        item.destroy();
+        this.score += 10;
+        this.calories += 5;
+        this.scoreText.setText('Score: ' + this.score);
+        this.caloriesText.setText('Calories: ' + this.calories);
     }
-}
 
+    hitHazard(player, hazard) {
+        if (this.isInvincible || this.isGameOver) return;
 
+        this.cameras.main.shake(200, 0.01);
+        hazard.destroy();
+        this.lives -= 1;
+
+        if (this.lives >= 0 && this.hearts[this.lives]) {
+            const heart = this.hearts[this.lives];
+            this.tweens.add({
+                targets: heart,
+                scaleX: 1.5,
+                scaleY: 1.5,
+                alpha: 0,
+                duration: 300,
+                yoyo: false,
+                ease: 'Cubic.easeOut',
+                onComplete: () => {
+                    heart.setVisible(false);
+                    heart.setScale(0.12);
+                    heart.setAlpha(1);
+                }
+            });
+        }
+
+        this.isInvincible = true;
+        this.time.delayedCall(1500, () => this.isInvincible = false);
+
+        this.tweens.add({
+            targets: this.player,
+            alpha: 0.5,
+            yoyo: true,
+            repeat: 5,
+            duration: 100,
+            onComplete: () => this.player.setAlpha(1)
+        });
+
+        if (this.lives <= 0) {
+            this.isGameOver = true; // ✅ Lock state
+            this.gameSpeed = 0;
+
+            this.player.anims.stop();
+            this.player.setTint(0xff0000);
+            this.player.body.setAllowGravity(true);
+            this.player.setVelocityX(0);
+            this.player.setVelocityY(-300);
+
+            this.tweens.add({
+                targets: this.player,
+                angle: 90,
+                duration: 400,
+                ease: 'Cubic.easeOut',
+            });
+
+            this.time.addEvent({
+                delay: 800,
+                callback: () => {
+                    this.player.setVelocity(0);
+                    this.player.body.moves = false;
+                }
+            });
+
+            this.time.delayedCall(1200, () => {
+                this.add.text(
+                    this.sys.game.config.width / 2,
+                    this.sys.game.config.height / 2,
+                    'GAME OVER',
+                    {
+                        fontSize: '48px',
+                        fill: '#fff',
+                        stroke: '#000',
+                        strokeThickness: 6
+                    }
+                ).setOrigin(0.5);
+            });
+        }
+    }
 }
