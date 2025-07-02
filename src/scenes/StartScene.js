@@ -4,6 +4,11 @@ export default class StartScene extends Phaser.Scene {
         super({ key: 'StartScene' });
     }
 
+    init(data) {
+    // store it so you can use it in create() or pass onwards
+    this.selectedCharacter = data.selectedCharacter;
+    }
+
     preload() {}
 
     create() {
@@ -163,7 +168,7 @@ export default class StartScene extends Phaser.Scene {
 
         startButton.on('pointerdown', () => {
             playClickSound();
-            this.scene.start('GameScene');
+            this.scene.start('GameScene', { selectedCharacter: this.selectedCharacter });
         });
 
         this.tweens.add({
@@ -177,7 +182,7 @@ export default class StartScene extends Phaser.Scene {
         });
 
         this.input.keyboard.on('keydown-SPACE', () => {
-            this.scene.start('GameScene');
+            this.scene.start('GameScene', { selectedCharacter: this.selectedCharacter });
         });
     }
 

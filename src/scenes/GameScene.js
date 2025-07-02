@@ -1,4 +1,5 @@
-// GameScene.js
+import { PLAYER_CONFIGS } from '../config.js';
+
 export default class GameScene extends Phaser.Scene {
     constructor() {
         super({ key: 'GameScene' });
@@ -10,13 +11,18 @@ export default class GameScene extends Phaser.Scene {
         this.itemSpawnHeightRange = [150, 300];
         this.selectedVoice = null;
     }
-    
 
+    init(data) {
+    // now data.selectedCharacter is what you passed
+    this.selectedCharacter = data.selectedCharacter;
+  }
+    
     preload() {}
 
 
     create() {
         const { width, height } = this.sys.game.config;
+        const config = PLAYER_CONFIGS.find(p => p.key === this.selectedCharacter);
         this.isPaused = false;
         
         // Pause pannel
@@ -347,34 +353,38 @@ export default class GameScene extends Phaser.Scene {
         // Groups
         this.powerUps = this.physics.add.group();
         this.hazards = this.physics.add.group();
-                                 
-        this.player = this.physics.add.sprite(150, 500, 'runner', 0);
-        
-        
-        this.player.setOrigin(0.5, 1);
-        this.player.setScale(0.35); 
-      
-        this.player.setGravityY(1200);
+        this.obstacles = this.physics.add.group();
 
-        
-        this.player.setCollideWorldBounds(true);
+        // ✅ Character
+        this.runner = this.physics.add.sprite(width * config.x, 0, config.key);
+        this.runner.setScale(config.scale);
+        this.runner.setOrigin(0.5, 1);
+        this.runner.body.allowGravity = true;
+        this.runner.setCollideWorldBounds(true);
+        this.runner.setDepth(10);
 
-      
-        this.player.body.setSize(80, 160);
-        this.player.body.setOffset(95, 840);
-        
-        
-      
-        const ground = this.add.rectangle(0, 550, width, 20, 0x000000, 0).setOrigin(0,0);
-        this.physics.add.existing(ground, true); 
-        this.physics.add.collider(this.player, ground); // Make the player stand on the ground.
+        this.anims.create({
+            key: 'run',
+            frames: this.anims.generateFrameNumbers(config.key, {
+                start: 0,
+                end: config.frames - 1
+            }),
+            frameRate: 10,
+            repeat: -1
+        });
 
-       
+        this.runner.anims.play('run', true);
+
+        // ✅ Ground
+        const ground = this.add.rectangle(0, 470, width, 20, 0x000000, 0).setOrigin(0, 0);
+        this.physics.add.existing(ground, true);
+        this.physics.add.collider(this.runner, ground);
+
+        // ✅ Controls
         this.cursors = this.input.keyboard.createCursorKeys();
         this.spacebar = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
 
 
-        // this.runner.anims.play('run', true);
         // Spawn events
         this.powerUpTimer = this.time.addEvent({
             delay: Phaser.Math.Between(2500, 4500),
@@ -391,6 +401,14 @@ export default class GameScene extends Phaser.Scene {
         this.clickSound = this.sound.get('click-sound') || this.sound.add('click-sound', {
             volume: this.registry.get('soundVolume') ?? 0.5
         });
+
+        this.time.addEvent({
+            delay: Phaser.Math.Between(2500, 5000),
+            callback: this.spawnObstacle,
+            callbackScope: this,
+            loop: true
+        });
+
     }
 
     update(time, delta) {
@@ -398,31 +416,26 @@ export default class GameScene extends Phaser.Scene {
 
         this.background.tilePositionX += this.gameSpeed;
 
-      
         const playerSpeed = 350;
-        const jumpHeight = 600; 
+        const jumpHeight = 600;
+        const onGround = this.runner.body.blocked.down;
 
-        
-        const onGround = this.player.body.blocked.down;
-
-       
+        // ✅ Movement control
         if (this.cursors.left.isDown) {
-            this.player.setVelocityX(-playerSpeed);
-            this.player.setFlipX(true);
+            this.runner.setVelocityX(-playerSpeed);
+            this.runner.setFlipX(true);
         } else if (this.cursors.right.isDown) {
-            this.player.setVelocityX(playerSpeed);
-            this.player.setFlipX(false);
+            this.runner.setVelocityX(playerSpeed);
+            this.runner.setFlipX(false);
         } else {
-            this.player.setVelocityX(0);
+            this.runner.setVelocityX(0);
         }
 
-        if (onGround) {
-            if (Phaser.Input.Keyboard.JustDown(this.spacebar)) {
-                this.player.setVelocityY(-jumpHeight);
-            }
+        if (onGround && Phaser.Input.Keyboard.JustDown(this.spacebar)) {
+            this.runner.setVelocityY(-jumpHeight);
         }
-        
-        
+
+        // ✅ Cleanup
         this.powerUps.getChildren().forEach(item => {
             if (item.x < -item.width) item.destroy();
         });
@@ -521,5 +534,20 @@ export default class GameScene extends Phaser.Scene {
         item.setImmovable(true);
         this.lastSpawnedItemX = currentX;
         this.lastSpawnedItemY = y;
+    }
+
+    spawnObstacle() {
+        const obstacleTypes = ['dumbell', 'gym-bench', 'gym-plates', 'jump-rope', 'kettlebell', 'rock', 'tire-stack'];
+        const key = Phaser.Utils.Array.GetRandom(obstacleTypes);
+        const currentX = this.sys.game.config.width + 50;
+        const y = 480; // Make sure this matches your ground Y
+
+        const obstacle = this.obstacles.create(currentX, y, key);
+        obstacle.setVelocityX(-this.gameSpeed * 50);
+        obstacle.setDisplaySize(110, 110); // You can adjust this per asset
+        obstacle.setOrigin(0.5, 1);
+        obstacle.body.allowGravity = false;
+        obstacle.setImmovable(true);
+        obstacle.setDepth(5);
     }
 }

@@ -1,7 +1,10 @@
+import { PLAYER_CONFIGS } from '../config.js';
+
 // BootScene.js
 export default class BootScene extends Phaser.Scene {
     constructor() {
         super({ key: 'BootScene' });
+        this.selectedCharacter = 'runner9';
     }
 
     preload() {
@@ -45,6 +48,8 @@ export default class BootScene extends Phaser.Scene {
             'Hotdog', 'Donuts','Pizza'
         ];
 
+        const obstacleTypes = ['dumbell', 'gym-bench', 'gym-plates', 'jump-rope', 'kettlebell', 'rock', 'tire-stack'];
+
         this.load.image('background', 'assets/background.jpg');
 
         fruitTypes.forEach(healthy => {
@@ -52,45 +57,27 @@ export default class BootScene extends Phaser.Scene {
         });
 
         junkTypes.forEach(junk => {
-            this.load.image(junk, `assets/obstacles/${junk}.png`);
+            this.load.image(junk, `assets/junks/${junk}.png`);
+        });
+
+        obstacleTypes.forEach(obstacle => {
+            this.load.image(obstacle, `assets/obstacles/${obstacle}.png`);
         });
 
         this.load.image('start-bg', 'assets/start-background.jpg');
         this.load.audio('start-sound', 'assets/sounds/music.mp3');
         this.load.audio('click-sound', 'assets/sounds/click.mp3');
 
-        // this.load.spritesheet('runner1', 'assets/players/player1-sprite.png', {
-        //     frameWidth: 204,
-        //     frameHeight: 226,
-        //     margin: 0,
-        //     spacing: 0
-        // });
-
-        // this.load.spritesheet('runner2', 'assets/players/player2-sprite.png', {
-        //     frameWidth: 65,
-        //     frameHeight: 55,
-        //     margin: 0,
-        //     spacing: 0
-        // });
-
-        // this.load.spritesheet('runner3', 'assets/players/player3-sprite.png', {
-        //     frameWidth: 680,
-        //     frameHeight: 472,
-        //     margin: 0,
-        //     spacing: 0
-        // });
-
-        this.load.spritesheet('runner4', 'assets/players/player4-sprite.png', {
-            frameWidth: 165,
-            frameHeight: 200,
-            margin: 0,
-            spacing: 0
+        PLAYER_CONFIGS.forEach(config => {
+            this.load.spritesheet(config.key, config.sprite, {
+                frameWidth: config.frameWidth,
+                frameHeight: config.frameHeight,
+                margin: 0,
+                spacing: 0
+            });
         });
 
         this.load.image('heart', 'assets/heart.svg');
-
-        this.load.spritesheet('runner', 'assets/runner_run.png', { frameWidth: 269, frameHeight: 1024 });
-
     }
 
     create() {
@@ -117,6 +104,6 @@ export default class BootScene extends Phaser.Scene {
             volume: soundVolume
         });
 
-        this.scene.start('StartScene');
+        this.scene.start('StartScene', { selectedCharacter: this.selectedCharacter });
     }
 }
