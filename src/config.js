@@ -101,23 +101,127 @@ export const PLAYER_CONFIGS = [
   }
 ];
 
-export const CALORIE_VALUES = {
-    // Healthy
-    'Avocado': 160,
-    'Boiled Egg': 78,
-    'Berries': 60,
-    'Broccoli': 55,
-    'Mango': 99,
-    'Banana': 105,
-    'Pineapple': 82,
-    'Pomegranate': 83,
-    'Proteinshake': 120,
+export const powerUpTypes = [
+  {
+    key: 'granola-bar',
+    calories: 50,
+    score: 2,
+    rarity: 4,
+  },
+  {
+    key: 'Avocado',
+    calories: 70,
+    score: 3,
+    rarity: 3,
+  },
+  {
+    key: 'Boiled Egg',
+    calories: 30,
+    score: 1,
+    rarity: 1,
+  },
+  {
+    key: 'Berries',
+    calories: 40,
+    score: 2,
+    rarity: 2,
+  },
+  {
+    key: 'Broccoli',
+    calories: 35,
+    score: 1,
+    rarity: 1,
+  },
+  {
+    key: 'Pomegranate',
+    calories: 45,
+    score: 2,
+    rarity: 2,
+  },
+  {
+    key: 'Banana',
+    calories: 60,
+    score: 2,
+    rarity: 3,
+  },
+  {
+    key: 'energy-drink',
+    calories: 80,
+    score: 4,
+    rarity: 4,
+  },
+  {
+    key: 'Mango',
+    calories: 55,
+    score: 2,
+    rarity: 2,
+  },
+  {
+    key: 'Proteinshake',
+    calories: 90,
+    score: 5,
+    rarity: 4,
+  },
+  {
+    key: 'Salad Bowl',
+    calories: 65,
+    score: 3,
+    rarity: 3,
+  }
+];
 
-    // Junk
-    'Fries': 365,
-    'Burger': 540,
-    'Hotdog': 290,
-    'Donuts': 452,
-    'Pizza': 285
-};
+export const hazardTypes = [
+  {
+    key: 'Candy Bar',
+    calories: 90,
+    score: -1,
+    rarity: 1,
+  },
+  {
+    key: 'Soda',
+    calories: 85,
+    score: -1,
+    rarity: 1,
+  },
+  {
+    key: 'Fries',
+    calories: 120,
+    score: -2,
+    rarity: 2,
+  },
+  {
+    key: 'Burger',
+    calories: 150,
+    score: -2,
+    rarity: 4,
+  },
+  {
+    key: 'Hotdog',
+    calories: 130,
+    score: -2,
+    rarity: 2,
+  },
+  {
+    key: 'Donuts',
+    calories: 110,
+    score: -2,
+    rarity: 3,
+  },
+  {
+    key: 'Pizza',
+    calories: 160,
+    score: -3,
+    rarity: 4,
+  }
+];
+
+export const obstacleTypes = [
+  'dumbell',
+  'gym-bench',
+  'gym-plates',
+  'jump-rope',
+  'kettlebell',
+  'rock',
+  'tire-stack'
+];
 
