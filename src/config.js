@@ -100,3 +100,24 @@ export const PLAYER_CONFIGS = [
     frames: 6
   }
 ];
+
+export const CALORIE_VALUES = {
+    // Healthy
+    'Avocado': 160,
+    'Boiled Egg': 78,
+    'Berries': 60,
+    'Broccoli': 55,
+    'Mango': 99,
+    'Banana': 105,
+    'Pineapple': 82,
+    'Pomegranate': 83,
+    'Proteinshake': 120,
+
+    // Junk
+    'Fries': 365,
+    'Burger': 540,
+    'Hotdog': 290,
+    'Donuts': 452,
+    'Pizza': 285
+};
+

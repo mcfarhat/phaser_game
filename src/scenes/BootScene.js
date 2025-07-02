@@ -1,7 +1,10 @@
+import { PLAYER_CONFIGS } from '../config.js';
+
 // BootScene.js
 export default class BootScene extends Phaser.Scene {
     constructor() {
         super({ key: 'BootScene' });
+        this.selectedCharacter = 'runner9';
     }
 
     preload() {
@@ -45,6 +48,8 @@ export default class BootScene extends Phaser.Scene {
             'Hotdog', 'Donuts','Pizza'
         ];
 
+        const obstacleTypes = ['dumbell', 'gym-bench', 'gym-plates', 'jump-rope', 'kettlebell', 'rock', 'tire-stack'];
+
         this.load.image('background', 'assets/background.jpg');
 
         fruitTypes.forEach(healthy => {
@@ -52,12 +57,27 @@ export default class BootScene extends Phaser.Scene {
         });
 
         junkTypes.forEach(junk => {
-            this.load.image(junk, `assets/obstacles/${junk}.png`);
+            this.load.image(junk, `assets/junks/${junk}.png`);
+        });
+
+        obstacleTypes.forEach(obstacle => {
+            this.load.image(obstacle, `assets/obstacles/${obstacle}.png`);
         });
 
         this.load.image('start-bg', 'assets/start-background.jpg');
         this.load.audio('start-sound', 'assets/sounds/music.mp3');
         this.load.audio('click-sound', 'assets/sounds/click.mp3');
+
+        PLAYER_CONFIGS.forEach(config => {
+            this.load.spritesheet(config.key, config.sprite, {
+                frameWidth: config.frameWidth,
+                frameHeight: config.frameHeight,
+                margin: 0,
+                spacing: 0
+            });
+        });
+
+        this.load.image('heart', 'assets/heart.svg');
     }
 
     create() {
@@ -74,7 +94,7 @@ export default class BootScene extends Phaser.Scene {
         this.registry.set('musicVolume', musicVolume);
         this.registry.set('soundVolume', soundVolume);
 
-        this.bgMusic = this.sound.get('bgMusic') || this.sound.add('start-sound', { loop: true, volume: musicVolume });
+        this.bgMusic = this.sound.get('start-sound') || this.sound.add('start-sound', { loop: true, volume: musicVolume });
 
         if (musicEnabled && !this.bgMusic.isPlaying) {
             this.bgMusic.play();
@@ -84,6 +104,6 @@ export default class BootScene extends Phaser.Scene {
             volume: soundVolume
         });
 
-        this.scene.start('StartScene');
+        this.scene.start('StartScene', { selectedCharacter: this.selectedCharacter });
     }
 }
