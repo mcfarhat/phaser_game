@@ -1,4 +1,4 @@
-import { PLAYER_CONFIGS } from '../config.js';
+import { PLAYER_CONFIGS, powerUpTypes, hazardTypes, obstacleTypes } from '../config.js';
 
 export default class GameScene extends Phaser.Scene {
     constructor() {
@@ -501,8 +501,8 @@ export default class GameScene extends Phaser.Scene {
     }
 
     spawnPowerUp() {
-        const types = ['granola-bar', 'Avocado', 'Boiled Egg', 'Berries', 'Broccoli', 'Pomegranate', 'Banana', 'energy-drink', 'Mango', 'Proteinshake', 'Salad Bowl'];
-        const key = Phaser.Utils.Array.GetRandom(types);
+        const weightedList = powerUpTypes.flatMap(item => Array(5 - item.rarity).fill(item));
+        const { key } = Phaser.Utils.Array.GetRandom(weightedList);
         const currentX = this.sys.game.config.width + 50;
 
         let y, attempts = 0;
@@ -514,13 +514,14 @@ export default class GameScene extends Phaser.Scene {
         item.setVelocityX(-this.gameSpeed * 50).setDisplaySize(80, 80);
         item.body.allowGravity = false;
         item.setImmovable(true);
+        item.collectibleType = powerUpTypes.find(p => p.key === key); // Store reference
         this.lastSpawnedItemX = currentX;
         this.lastSpawnedItemY = y;
     }
 
     spawnHazard() {
-        const types = ['Candy Bar', 'Soda', 'Fries', 'Burger', 'Hotdog', 'Donuts', 'Pizza'];
-        const key = Phaser.Utils.Array.GetRandom(types);
+        const weightedList = hazardTypes.flatMap(item => Array(5 - item.rarity).fill(item));
+        const { key } = Phaser.Utils.Array.GetRandom(weightedList);
         const currentX = this.sys.game.config.width + 100;
 
         let y, attempts = 0;
@@ -532,19 +533,19 @@ export default class GameScene extends Phaser.Scene {
         item.setVelocityX(-this.gameSpeed * 50).setDisplaySize(80, 80);
         item.body.allowGravity = false;
         item.setImmovable(true);
+        item.collectibleType = hazardTypes.find(h => h.key === key);
         this.lastSpawnedItemX = currentX;
         this.lastSpawnedItemY = y;
     }
 
     spawnObstacle() {
-        const obstacleTypes = ['dumbell', 'gym-bench', 'gym-plates', 'jump-rope', 'kettlebell', 'rock', 'tire-stack'];
         const key = Phaser.Utils.Array.GetRandom(obstacleTypes);
         const currentX = this.sys.game.config.width + 50;
-        const y = 480; // Make sure this matches your ground Y
+        const y = 480;
 
         const obstacle = this.obstacles.create(currentX, y, key);
         obstacle.setVelocityX(-this.gameSpeed * 50);
-        obstacle.setDisplaySize(110, 110); // You can adjust this per asset
+        obstacle.setDisplaySize(110, 110);
         obstacle.setOrigin(0.5, 1);
         obstacle.body.allowGravity = false;
         obstacle.setImmovable(true);
