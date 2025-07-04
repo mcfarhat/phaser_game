@@ -1,4 +1,32 @@
 import { PLAYER_CONFIGS, powerUpTypes, hazardTypes, obstacleTypes } from '../config.js';
+import { supabase } from '../supabaseClient.js';
+
+async function submitScore(player_name, score, calories) {
+  const { data, error } = await supabase
+    .from('leaderboard')
+    .insert([{ player_name: player_name, score, calories }]);
+
+  if (error) {
+    console.error('Error submitting score:', error.message);
+  } else {
+    console.log('Score submitted:', data);
+  }
+}
+
+async function getTopScores(limit = 10) {
+  const { data, error } = await supabase
+    .from('leaderboard')
+    .select('*')
+    .order('score', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error('Error fetching leaderboard:', error.message);
+    return [];
+  }
+
+  return data;
+}
 
 export default class GameScene extends Phaser.Scene {
     constructor() {
