@@ -1,49 +1,49 @@
 import { PLAYER_CONFIGS, powerUpTypes, hazardTypes, obstacleTypes } from '../config.js';
 import { supabase } from '../supabaseClient.js';
 
-async function submitScore(player_name, score, calories) {
-  const { data, error } = await supabase
-    .from('leaderboard')
-    .insert([{ player_name: player_name, score, calories }]);
+    async function submitScore(player_name, score, calories) {
+        const { data, error } = await supabase
+            .from('leaderboard')
+            .insert([{ player_name: player_name, score, calories }]);
 
-  if (error) {
-    console.error('Error submitting score:', error.message);
-  } else {
-    console.log('Score submitted:', data);
-  }
-}
+        if (error) {
+            console.error('Error submitting score:', error.message);
+        } else {
+            console.log('Score submitted:', data);
+        }
+    }
 
-async function getTopScores(limit = 10) {
-  const { data, error } = await supabase
-    .from('leaderboard')
-    .select('*')
-    .order('score', { ascending: false })
-    .limit(limit);
+    async function getTopScores(limit = 10) {
+        const { data, error } = await supabase
+            .from('leaderboard')
+            .select('*')
+            .order('score', { ascending: false })
+            .limit(limit);
 
-  if (error) {
-    console.error('Error fetching leaderboard:', error.message);
-    return [];
-  }
+        if (error) {
+            console.error('Error fetching leaderboard:', error.message);
+            return [];
+        }
 
-  return data;
-}
+        return data;
+    }
 
-export default class GameScene extends Phaser.Scene {
-    constructor() {
-        super({ key: 'GameScene' });
-        this.gameSpeed = 4;
-        this.lastSpawnedItemX = -Infinity;
-        this.lastSpawnedItemY = -Infinity;
-        this.minDistanceBetweenItems = 150;
-        this.minYDistanceBetweenItems = 120; 
-        this.itemSpawnHeightRange = [150, 300];
-        this.selectedVoice = null;
+    export default class GameScene extends Phaser.Scene {
+        constructor() {
+            super({ key: 'GameScene' });
+            this.gameSpeed = 4;
+            this.lastSpawnedItemX = -Infinity;
+            this.lastSpawnedItemY = -Infinity;
+            this.minDistanceBetweenItems = 150;
+            this.minYDistanceBetweenItems = 120; 
+            this.itemSpawnHeightRange = [150, 300];
+            this.selectedVoice = null;
     }
 
     init(data) {
-    // now data.selectedCharacter is what you passed
-    this.selectedCharacter = data.selectedCharacter;
-  }
+        // now data.selectedCharacter is what you passed
+        this.selectedCharacter = data.selectedCharacter;
+    }
     
     preload() {}
 
@@ -387,11 +387,9 @@ export default class GameScene extends Phaser.Scene {
         // ✅ Character
         this.runner = this.physics.add.sprite(width * config.x, 0, config.key);
         this.jumpCount = 0; // for double jump
-
-        
    
-this.runner.body.setSize(50, 100);     // width, height
-this.runner.body.setOffset(30, 20);    // x, y offset
+        this.runner.body.setSize(50, 100);     // width, height
+        this.runner.body.setOffset(30, 20);    // x, y offset
 
         this.runner.setScale(config.scale);
         this.runner.setOrigin(0.5, 1);
@@ -417,21 +415,21 @@ this.runner.body.setOffset(30, 20);    // x, y offset
         const ground = this.add.rectangle(0, 470, width, 20, 0x000000, 0).setOrigin(0, 0);
         this.physics.add.existing(ground, true);
         this.physics.add.collider(this.runner, ground, () => {
-    this.jumpCount = 0; // reset jump count on ground touch
-});
+        this.jumpCount = 0; // reset jump count on ground touch
+    });
 
 
         // ✅ Controls
         this.cursors = this.input.keyboard.createCursorKeys();
         this.spacebar = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
-// Healthy food (power-ups)
-this.physics.add.overlap(this.runner, this.powerUps, this.collectPowerUp, null, this);
+        // Healthy food (power-ups)
+        this.physics.add.overlap(this.runner, this.powerUps, this.collectPowerUp, null, this);
 
-// Junk food (hazards)
-this.physics.add.overlap(this.runner, this.hazards, this.collectHazard, null, this);
+        // Junk food (hazards)
+        this.physics.add.overlap(this.runner, this.hazards, this.collectHazard, null, this);
 
-// Obstacle collision (deduct life)
-this.physics.add.collider(this.runner, this.obstacles, this.hitObstacle, null, this);
+        // Obstacle collision (deduct life)
+        this.physics.add.collider(this.runner, this.obstacles, this.hitObstacle, null, this);
 
 
         // Spawn events
@@ -481,11 +479,11 @@ this.physics.add.collider(this.runner, this.obstacles, this.hitObstacle, null, t
         }
 
         if (Phaser.Input.Keyboard.JustDown(this.spacebar)) {
-    if (this.jumpCount < 2) {
-        this.runner.setVelocityY(-jumpHeight);
-        this.jumpCount++;
+        if (this.jumpCount < 2) {
+            this.runner.setVelocityY(-jumpHeight);
+            this.jumpCount++;
+        }
     }
-}
 
 
         // ✅ Cleanup
@@ -500,8 +498,8 @@ this.physics.add.collider(this.runner, this.obstacles, this.hitObstacle, null, t
         this.timerText.setText('TIME: ' + elapsed + ' s');
         const deltaSeconds = delta / 1000;
         this.distance += this.gameSpeed * deltaSeconds / 10;
-       this.caloriesText.setText('CALORIES: ' + this.calories);
-this.scoreText.setText('SCORE: ' + this.score);
+        this.caloriesText.setText('CALORIES: ' + this.calories);
+        this.scoreText.setText('SCORE: ' + this.score);
 
         this.distanceText.setText('DISTANCE: ' + Math.floor(this.distance) + ' m');
     }
@@ -605,99 +603,93 @@ this.scoreText.setText('SCORE: ' + this.score);
         obstacle.setImmovable(true);
         obstacle.setDepth(5);
         // Shrink the obstacle hitbox and lower it to the feet/base
-obstacle.body.setSize(60, 40);       // width, height of collider box
-obstacle.body.setOffset(25, 70);     // x and y offset inside the sprite
-
+        obstacle.body.setSize(60, 40);       // width, height of collider box
+        obstacle.body.setOffset(25, 70);     // x and y offset inside the sprite
     }
+
    collectPowerUp(player, item) {
-    const data = powerUpTypes.find(p => p.key === item.texture.key);
-    if (!data) return;
+        const data = powerUpTypes.find(p => p.key === item.texture.key);
+        if (!data) return;
 
-    this.score += data.score;
-    this.calories += data.calories;
+        this.score += data.score;
+        this.calories += data.calories;
 
-    this.scoreText.setText('SCORE: ' + this.score);
-    this.caloriesText.setText('CALORIES: ' + this.calories);
+        this.scoreText.setText('SCORE: ' + this.score);
+        this.caloriesText.setText('CALORIES: ' + this.calories);
 
-    item.destroy();
-}
+        item.destroy();
+    }
 
-collectHazard(player, item) {
-    const data = hazardTypes.find(h => h.key === item.texture.key);
-    if (!data) return;
+    collectHazard(player, item) {
+        const data = hazardTypes.find(h => h.key === item.texture.key);
+        if (!data) return;
 
-    this.score += data.score; // this will reduce score since it's negative
-    this.calories += data.calories;
+        this.score += data.score; // this will reduce score since it's negative
+        this.calories += data.calories;
 
-    this.scoreText.setText('SCORE: ' + this.score);
-    this.caloriesText.setText('CALORIES: ' + this.calories);
+        this.scoreText.setText('SCORE: ' + this.score);
+        this.caloriesText.setText('CALORIES: ' + this.calories);
 
-    item.destroy();
-}
+        item.destroy();
+    }
 
+    hitObstacle(player, obstacle) {
+        this.playHitFeedback();
 
-hitObstacle(player, obstacle) {
-    this.playHitFeedback();
+        obstacle.destroy();
 
-    obstacle.destroy();
+        if (this.lives > 0) {
+            this.lives--;
 
-    if (this.lives > 0) {
-        this.lives--;
-
-        const heart = this.hearts[this.lives];
-        if (heart) {
-            // Animate heart: scale up slightly then shrink & fade out
-            this.tweens.timeline({
-                targets: heart,
-                ease: 'Power1',
-                
-   
-                tweens: [
-                    {
-                        scale: heart.scale * 1.3,
-                        duration: 150,
-                    },
-                    {
-                        scale: 0,
-                        alpha: 0,
-                        angle: 360,
-                        duration: 300,
-                        onComplete: () => {
-                            heart.setVisible(false);
-                            // Reset scale and alpha for potential reuse
-                            heart.setScale(0.04);
-                            heart.setAlpha(1);
+            const heart = this.hearts[this.lives];
+            if (heart) {
+                // Animate heart: scale up slightly then shrink & fade out
+                this.tweens.timeline({
+                    targets: heart,
+                    ease: 'Power1',
+                    tweens: [
+                        {
+                            scale: heart.scale * 1.3,
+                            duration: 150,
+                        },
+                        {
+                            scale: 0,
+                            alpha: 0,
+                            angle: 360,
+                            duration: 300,
+                            onComplete: () => {
+                                heart.setVisible(false);
+                                // Reset scale and alpha for potential reuse
+                                heart.setScale(0.04);
+                                heart.setAlpha(1);
+                            }
                         }
-                    }
-                ]
-            });
-        }
-
-        if (this.lives === 0) {
-            this.gameOver();
+                    ]
+                });
+            }
+            if (this.lives === 0) {
+                this.gameOver();
+            }
         }
     }
-}
 
-gameOver() {
-    this.togglePause(true);
-
-    // Stop player movement and animation
-    this.runner.setVelocity(0);
-    this.runner.anims.stop();
-
-    // Fall animation (rotate and drop to ground)
-    this.tweens.add({
-    targets: this.runner,
-    y: this.runner.y + 50,       // Drop slightly to the ground
-    angle: 80,                   
-    duration: 500,               // Faster impact
-    ease: 'Cubic.easeIn',
-    onComplete: () => {
+    gameOver() {
+        this.togglePause(true);
+        // Stop player movement and animation
         this.runner.setVelocity(0);
-        this.runner.body.allowGravity = false;
-    }
-});
+        this.runner.anims.stop();
+        // Fall animation (rotate and drop to ground)
+        this.tweens.add({
+            targets: this.runner,
+            y: this.runner.y + 50,       // Drop slightly to the ground
+            angle: 80,                   
+            duration: 500,               // Faster impact
+            ease: 'Cubic.easeIn',
+            onComplete: () => {
+                this.runner.setVelocity(0);
+                this.runner.body.allowGravity = false;
+            }
+        });
 
 
     const width = this.sys.game.config.width;
@@ -778,34 +770,32 @@ gameOver() {
             ease: 'Sine.easeInOut',
             duration: 600
         });
-    };
+        };
 
-    // Restart Button
-    createButton('RESTART', width / 2 - 70, height * 0.55, () => {
-        this.scene.restart();
-    });
+        // Restart Button
+        createButton('RESTART', width / 2 - 70, height * 0.55, () => {
+            this.scene.restart();
+        });
 
-    // Home Button
-    createButton('HOME', width / 2 + 70, height * 0.55, () => {
-        this.scene.stop();
-        this.scene.start('StartScene');
-    });
-}
-
-
-playHitFeedback() {
-    if (navigator.vibrate) navigator.vibrate(200);
-    this.cameras.main.shake(200, 0.01);
-    this.tweens.add({
-        targets: this.runner,
-        tint: 0xff0000,
-        yoyo: true,
-        duration: 100,
-        repeat: 2,
-        onComplete: () => this.runner.clearTint()
-    });
-   
-}
+        // Home Button
+        createButton('HOME', width / 2 + 70, height * 0.55, () => {
+            this.scene.stop();
+            this.scene.start('StartScene');
+        });
+    }
 
 
+    playHitFeedback() {
+        if (navigator.vibrate) navigator.vibrate(200);
+        this.cameras.main.shake(200, 0.01);
+        this.tweens.add({
+            targets: this.runner,
+            tint: 0xff0000,
+            yoyo: true,
+            duration: 100,
+            repeat: 2,
+            onComplete: () => this.runner.clearTint()
+        });
+    
+    }
 } 
