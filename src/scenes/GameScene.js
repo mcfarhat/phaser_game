@@ -387,9 +387,23 @@ import { supabase } from '../supabaseClient.js';
         // ✅ Character
         this.runner = this.physics.add.sprite(width * config.x, 0, config.key);
         this.jumpCount = 0; // for double jump
-   
-        this.runner.body.setSize(50, 100);     // width, height
-        this.runner.body.setOffset(30, 20);    // x, y offset
+
+        const fw = config.frameWidth;   // actual displayed width
+        const fh = config.frameHeight;  // actual displayed height
+
+        //Picking the hitbox as 75% of the full size:
+        const hbW = Math.round(fw * 0.75);
+        const hbH = Math.round(fh * 0.75);
+
+        //Centering it horizontally under the sprite:
+        const offX = Math.round((fw - hbW) / 2);
+
+        //Pushing it down so its bottom edge sits at the sprite’s feet:
+        const offY = Math.round(fh - hbH);
+
+        //Applying to the physics body:
+        this.runner.body.setSize(hbW, hbH);
+        this.runner.body.setOffset(offX, offY);
 
         this.runner.setScale(config.scale);
         this.runner.setOrigin(0.5, 1);
@@ -415,8 +429,8 @@ import { supabase } from '../supabaseClient.js';
         const ground = this.add.rectangle(0, 470, width, 20, 0x000000, 0).setOrigin(0, 0);
         this.physics.add.existing(ground, true);
         this.physics.add.collider(this.runner, ground, () => {
-        this.jumpCount = 0; // reset jump count on ground touch
-    });
+            this.jumpCount = 0; // reset jump count on ground touch
+        });
 
 
         // ✅ Controls
