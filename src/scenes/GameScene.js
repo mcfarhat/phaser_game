@@ -10,6 +10,14 @@ export default class GameScene extends Phaser.Scene {
         this.minYDistanceBetweenItems = 120; 
         this.itemSpawnHeightRange = [150, 300];
         this.selectedVoice = null;
+        this.calorieBurnRate = 1.2; // per second while running
+this.jumpCalorieBurn = 6  ; // burn per jump
+this.speedIncreaseInterval = 10000; // every 10 seconds
+this.speedIncrement = 0.5;          // increase by 0.5 each time
+this.maxGameSpeed = 12;             // optional max speed cap
+
+
+
     }
 
     init(data) {
@@ -429,6 +437,18 @@ this.physics.add.collider(this.runner, this.obstacles, this.hitObstacle, null, t
             callbackScope: this,
             loop: true
         });
+        // Gradually increase game speed over time
+this.time.addEvent({
+    delay: this.speedIncreaseInterval,
+    loop: true,
+    callback: () => {
+        if (this.gameSpeed < this.maxGameSpeed) {
+            this.gameSpeed += this.speedIncrement;
+            console.log('Game speed increased to:', this.gameSpeed);
+        }
+    }
+});
+
 
     }
 
@@ -456,8 +476,14 @@ this.physics.add.collider(this.runner, this.obstacles, this.hitObstacle, null, t
     if (this.jumpCount < 2) {
         this.runner.setVelocityY(-jumpHeight);
         this.jumpCount++;
+
+        // 🔥 Burn calories on jump
+        this.calories -= this.jumpCalorieBurn;
+        if (this.calories < 0) this.calories = 0;
     }
 }
+
+
 
 
         // ✅ Cleanup
@@ -471,8 +497,15 @@ this.physics.add.collider(this.runner, this.obstacles, this.hitObstacle, null, t
         const elapsed = Math.floor((time - this.startTime) / 1000);
         this.timerText.setText('TIME: ' + elapsed + ' s');
         const deltaSeconds = delta / 1000;
+       // Burn calories gradually while running
+this.calories -= this.calorieBurnRate * deltaSeconds;
+
+// Prevent calories from going negative
+if (this.calories < 0) this.calories = 0;
+ 
         this.distance += this.gameSpeed * deltaSeconds / 10;
-       this.caloriesText.setText('CALORIES: ' + this.calories);
+       this.caloriesText.setText('CALORIES: ' + Math.floor(this.calories));
+
 this.scoreText.setText('SCORE: ' + this.score);
 
         this.distanceText.setText('DISTANCE: ' + Math.floor(this.distance) + ' m');
