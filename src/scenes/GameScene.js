@@ -10,12 +10,7 @@ export default class GameScene extends Phaser.Scene {
         this.minYDistanceBetweenItems = 120; 
         this.itemSpawnHeightRange = [150, 300];
         this.selectedVoice = null;
-        this.calorieBurnRate = 1.2; // per second while running
-this.jumpCalorieBurn = 6  ; // burn per jump
-this.speedIncreaseInterval = 10000; // every 10 seconds
-this.speedIncrement = 0.5;          // increase by 0.5 each time
-this.maxGameSpeed = 12;             // optional max speed cap
-
+        
 
 
     }
@@ -31,6 +26,12 @@ this.maxGameSpeed = 12;             // optional max speed cap
     create() {
         const { width, height } = this.sys.game.config;
         const config = PLAYER_CONFIGS.find(p => p.key === this.selectedCharacter);
+        this.calorieBurnRate = config.calorieBurnRate;
+this.jumpCalorieBurn = config.jumpCalorieBurn;
+this.speedIncreaseInterval = config.speedIncreaseInterval;
+this.speedIncrement = config.speedIncrement;
+this.maxGameSpeed = config.maxGameSpeed;
+
         this.isPaused = false;
         
         // Pause pannel
@@ -479,7 +480,7 @@ this.time.addEvent({
 
         // 🔥 Burn calories on jump
         this.calories -= this.jumpCalorieBurn;
-        if (this.calories < 0) this.calories = 0;
+        
     }
 }
 
@@ -500,8 +501,7 @@ this.time.addEvent({
        // Burn calories gradually while running
 this.calories -= this.calorieBurnRate * deltaSeconds;
 
-// Prevent calories from going negative
-if (this.calories < 0) this.calories = 0;
+
  
         this.distance += this.gameSpeed * deltaSeconds / 10;
        this.caloriesText.setText('CALORIES: ' + Math.floor(this.calories));
