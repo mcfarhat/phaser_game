@@ -70,6 +70,9 @@ export default class GameScene extends Phaser.Scene {
         this.lives = 3;
         this.distance = 0;
         this.startTime = this.time.now;
+        this.levelDuration = 5 * 60 * 1000; // 5 minutes in milliseconds
+        this.levelEndTime = this.startTime + this.levelDuration;
+        this.levelEnded = false;
 
         this.scoreText = this.add.text(10, 7, 'SCORE: 0', 
         { 
@@ -111,8 +114,7 @@ export default class GameScene extends Phaser.Scene {
         }).setScrollFactor(0);
         this.caloriesText.setResolution(3);
 
-        this.timerText = this.add.text(280, 7, 'Time: 0 s', 
-        { 
+        this.timeLeftText = this.add.text(300, 7, ' TIME: 5:00', { 
             fontSize: '19px', 
             fill: '#fff', 
             fontFamily: 'Arial', 
@@ -127,10 +129,10 @@ export default class GameScene extends Phaser.Scene {
                 stroke: true,
                 fill: true
             } 
-        }).setScrollFactor(0);
-        this.timerText.setResolution(3);
+        }).setScrollFactor(0);  
+        this.timeLeftText.setResolution(3);
 
-        this.distanceText = this.add.text(400, 7, 'Distance: 0 m', 
+        this.distanceText = this.add.text(410, 7, 'Distance: 0 m', 
         { 
             fontSize: '19px', 
             fill: '#fff', 
@@ -445,6 +447,13 @@ export default class GameScene extends Phaser.Scene {
     }
 
     update(time, delta) {
+        if (this.levelEnded) return;
+
+        if (time > this.levelEndTime && !this.levelEnded) {
+            this.levelCompleted();
+            return;
+        }
+
         if (this.isPaused) return;
 
         this.background.tilePositionX += this.gameSpeed;
@@ -480,14 +489,16 @@ export default class GameScene extends Phaser.Scene {
             if (item.x < -item.width) item.destroy();
         });
 
-        const elapsed = Math.floor((time - this.startTime) / 1000);
-        this.timerText.setText('TIME: ' + elapsed + ' s');
         const deltaSeconds = delta / 1000;
         this.distance += this.gameSpeed * deltaSeconds / 10;
-       this.caloriesText.setText('CALORIES: ' + this.calories);
-this.scoreText.setText('SCORE: ' + this.score);
+        this.caloriesText.setText('CALORIES: ' + this.calories);
+        this.scoreText.setText('SCORE: ' + this.score);
 
         this.distanceText.setText('DISTANCE: ' + Math.floor(this.distance) + ' m');
+        const timeLeft = Math.max(0, this.levelEndTime - time);
+        const minutes = Math.floor(timeLeft / 60000);
+        const seconds = Math.floor((timeLeft % 60000) / 1000);
+        this.timeLeftText.setText(`TIME: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`);
     }
 
     togglePause(pause) {
@@ -593,133 +604,107 @@ this.scoreText.setText('SCORE: ' + this.score);
         obstacle.body.setOffset(25, 70);     // x and y offset inside the sprite
 
     }
-   collectPowerUp(player, item) {
-    const data = powerUpTypes.find(p => p.key === item.texture.key);
-    if (!data) return;
+    collectPowerUp(player, item) {
+        const data = powerUpTypes.find(p => p.key === item.texture.key);
+        if (!data) return;
 
-    this.score += data.score;
-    this.calories += data.calories;
+        this.score += data.score;
+        this.calories += data.calories;
 
-    this.scoreText.setText('SCORE: ' + this.score);
-    this.caloriesText.setText('CALORIES: ' + this.calories);
+        this.scoreText.setText('SCORE: ' + this.score);
+        this.caloriesText.setText('CALORIES: ' + this.calories);
 
-    item.destroy();
-}
+        item.destroy();
+    }
 
-collectHazard(player, item) {
-    const data = hazardTypes.find(h => h.key === item.texture.key);
-    if (!data) return;
+    collectHazard(player, item) {
+        const data = hazardTypes.find(h => h.key === item.texture.key);
+        if (!data) return;
 
-    this.score += data.score; // this will reduce score since it's negative
-    this.calories += data.calories;
+        this.score += data.score; // this will reduce score since it's negative
+        this.calories += data.calories;
 
-    this.scoreText.setText('SCORE: ' + this.score);
-    this.caloriesText.setText('CALORIES: ' + this.calories);
+        this.scoreText.setText('SCORE: ' + this.score);
+        this.caloriesText.setText('CALORIES: ' + this.calories);
 
-    item.destroy();
-}
+        item.destroy();
+    }
 
 
-hitObstacle(player, obstacle) {
-    this.playHitFeedback();
+    hitObstacle(player, obstacle) {
+        this.playHitFeedback();
 
-    obstacle.destroy();
+        obstacle.destroy();
 
-    if (this.lives > 0) {
-        this.lives--;
+        if (this.lives > 0) {
+            this.lives--;
 
-        const heart = this.hearts[this.lives];
-        if (heart) {
-            // Animate heart: scale up slightly then shrink & fade out
-            this.tweens.timeline({
-                targets: heart,
-                ease: 'Power1',
-                
-   
-                tweens: [
-                    {
-                        scale: heart.scale * 1.3,
-                        duration: 150,
-                    },
-                    {
-                        scale: 0,
-                        alpha: 0,
-                        angle: 360,
-                        duration: 300,
-                        onComplete: () => {
-                            heart.setVisible(false);
-                            // Reset scale and alpha for potential reuse
-                            heart.setScale(0.04);
-                            heart.setAlpha(1);
+            const heart = this.hearts[this.lives];
+            if (heart) {
+                // Animate heart: scale up slightly then shrink & fade out
+                this.tweens.timeline({
+                    targets: heart,
+                    ease: 'Power1',
+                    
+    
+                    tweens: [
+                        {
+                            scale: heart.scale * 1.3,
+                            duration: 150,
+                        },
+                        {
+                            scale: 0,
+                            alpha: 0,
+                            angle: 360,
+                            duration: 300,
+                            onComplete: () => {
+                                heart.setVisible(false);
+                                // Reset scale and alpha for potential reuse
+                                heart.setScale(0.04);
+                                heart.setAlpha(1);
+                            }
                         }
-                    }
-                ]
-            });
-        }
+                    ]
+                });
+            }
 
-        if (this.lives === 0) {
-            this.gameOver();
+            if (this.lives === 0) {
+                this.gameOver();
+            }
         }
     }
-}
 
-gameOver() {
-    this.togglePause(true);
+    gameOver() {
+        this.togglePause(true);
 
-    // Stop player movement and animation
-    this.runner.setVelocity(0);
-    this.runner.anims.stop();
-
-    // Fall animation (rotate and drop to ground)
-    this.tweens.add({
-    targets: this.runner,
-    y: this.runner.y + 50,       // Drop slightly to the ground
-    angle: 80,                   
-    duration: 500,               // Faster impact
-    ease: 'Cubic.easeIn',
-    onComplete: () => {
+        // Stop player movement and animation
         this.runner.setVelocity(0);
-        this.runner.body.allowGravity = false;
-    }
-});
+        this.runner.anims.stop();
 
-
-    const width = this.sys.game.config.width;
-    const height = this.sys.game.config.height;
-
-    // GAME OVER Text
-    const gameOverText = this.add.text(width / 2, height * 0.35, 'GAME OVER', {
-        fontSize: '48px',
-        fill: '#fff',
-        fontFamily: 'Luckiest Guy',
-        stroke: '#729C97',
-        strokeThickness: 6,
-        shadow: {
-            offsetX: 1,
-            offsetY: 1,
-            color: '#000',
-            blur: 8,
-            stroke: true,
-            fill: true
+        // Fall animation (rotate and drop to ground)
+        this.tweens.add({
+        targets: this.runner,
+        y: this.runner.y + 50,       // Drop slightly to the ground
+        angle: 80,                   
+        duration: 500,               // Faster impact
+        ease: 'Cubic.easeIn',
+        onComplete: () => {
+            this.runner.setVelocity(0);
+            this.runner.body.allowGravity = false;
         }
-    }).setOrigin(0.5).setResolution(3);
+        });
 
-    // Common button function
-    const createButton = (label, x, y, callback) => {
-        const btnWidth = 100;
-        const btnHeight = 45;
-        const normalColor = 0x729C97;
-        const hoverColor = 0x7AAFBA;
 
-        const buttonBg = this.add.graphics();
-        buttonBg.fillStyle(normalColor, 1);
-        buttonBg.fillRoundedRect(-btnWidth / 2, -btnHeight / 2, btnWidth, btnHeight, 15);
+        const width = this.sys.game.config.width;
+        const height = this.sys.game.config.height;
 
-        const buttonText = this.add.text(0, 0, label, {
-            fontSize: '21px',
+        // GAME OVER Text
+        const gameOverText = this.add.text(width / 2, height * 0.35, 'GAME OVER', {
+            fontSize: '48px',
             fill: '#fff',
-            fontFamily: 'Arial',
-            fontStyle: 'bold',
+            fontFamily: 'Luckiest Guy',
+            stroke: '#729C97',
+            strokeThickness: 6,
             shadow: {
                 offsetX: 1,
                 offsetY: 1,
@@ -727,69 +712,249 @@ gameOver() {
                 blur: 8,
                 stroke: true,
                 fill: true
-            },
+            }
         }).setOrigin(0.5).setResolution(3);
 
-        const button = this.add.container(x, y, [buttonBg, buttonText]);
-        button.setSize(btnWidth, btnHeight);
-        button.setInteractive();
+        // Common button function
+        const createButton = (label, x, y, callback) => {
+            const btnWidth = 100;
+            const btnHeight = 45;
+            const normalColor = 0x729C97;
+            const hoverColor = 0x7AAFBA;
 
-        button.on('pointerover', () => {
-            buttonBg.clear();
-            buttonBg.fillStyle(hoverColor, 1);
-            buttonBg.fillRoundedRect(-btnWidth / 2, -btnHeight / 2, btnWidth, btnHeight, 15);
-            this.input.setDefaultCursor('pointer');
-        });
-
-        button.on('pointerout', () => {
-            buttonBg.clear();
+            const buttonBg = this.add.graphics();
             buttonBg.fillStyle(normalColor, 1);
             buttonBg.fillRoundedRect(-btnWidth / 2, -btnHeight / 2, btnWidth, btnHeight, 15);
-            this.input.setDefaultCursor('default');
+
+            const buttonText = this.add.text(0, 0, label, {
+                fontSize: '21px',
+                fill: '#fff',
+                fontFamily: 'Arial',
+                fontStyle: 'bold',
+                shadow: {
+                    offsetX: 1,
+                    offsetY: 1,
+                    color: '#000',
+                    blur: 8,
+                    stroke: true,
+                    fill: true
+                },
+            }).setOrigin(0.5).setResolution(3);
+
+            const button = this.add.container(x, y, [buttonBg, buttonText]);
+            button.setSize(btnWidth, btnHeight);
+            button.setInteractive();
+
+            button.on('pointerover', () => {
+                buttonBg.clear();
+                buttonBg.fillStyle(hoverColor, 1);
+                buttonBg.fillRoundedRect(-btnWidth / 2, -btnHeight / 2, btnWidth, btnHeight, 15);
+                this.input.setDefaultCursor('pointer');
+            });
+
+            button.on('pointerout', () => {
+                buttonBg.clear();
+                buttonBg.fillStyle(normalColor, 1);
+                buttonBg.fillRoundedRect(-btnWidth / 2, -btnHeight / 2, btnWidth, btnHeight, 15);
+                this.input.setDefaultCursor('default');
+            });
+
+            button.on('pointerdown', () => {
+                if (this.clickSound) this.clickSound.play();
+                callback();
+            });
+
+            this.tweens.add({
+                targets: button,
+                scaleX: 1.08,
+                scaleY: 1.08,
+                yoyo: true,
+                repeat: -1,
+                ease: 'Sine.easeInOut',
+                duration: 600
+            });
+        };
+
+        // Restart Button
+        createButton('RESTART', width / 2 - 70, height * 0.55, () => {
+            this.scene.restart();
         });
 
-        button.on('pointerdown', () => {
-            if (this.clickSound) this.clickSound.play();
-            callback();
+        // Home Button
+        createButton('HOME', width / 2 + 70, height * 0.55, () => {
+            this.scene.stop();
+            this.scene.start('StartScene');
         });
+    }
+
+    levelCompleted() {
+        this.levelEnded = true;
+        this.togglePause(true);
+        
+        // Stop player movement and animation
+        this.runner.setVelocity(0);
+        this.runner.anims.stop();
+        
+        this.showLevelCompleteScreen();
+    }
+
+    showLevelCompleteScreen() {
+    const width = this.sys.game.config.width;
+    const height = this.sys.game.config.height;
+
+    // Overlay
+    const overlay = this.add.rectangle(0, 0, width, height, 0x000000, 0.7)
+        .setOrigin(0)
+        .setDepth(100);
+    
+    // Pulsing Title Animation
+    const levelCompleteText = this.add.text(width / 2, height * 0.2, 'LEVEL COMPLETE!', {
+        fontSize: '48px',
+        fill: '#7FFF00',
+        fontFamily: 'Luckiest Guy',
+        stroke: '#729C97',
+        strokeThickness: 6,
+        align: 'center'
+    }).setOrigin(0.5)
+     .setDepth(101)
+     .setResolution(3);
+
+    this.tweens.add({
+        targets: levelCompleteText,
+        scale: { from: 1.1, to: 1.2 },
+        duration: 1500,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut'
+    });
+
+    // Stats with custom colors
+    const stats = [
+        { 
+            label: 'HEARTS REMAINING: ', 
+            value: this.lives,
+            color: '#FF6B6B' // Coral red for hearts
+        },
+        { 
+            label: 'SCORE: ', 
+            value: this.score,
+            color: '#4ECDC4' // Turquoise for score
+        },
+        { 
+            label: 'CALORIES: ', 
+            value: this.calories,
+            color: '#FFD166' // Yellow for calories
+        },
+        { 
+            label: 'DISTANCE: ', 
+            value: `${Math.floor(this.distance)}m`,
+            color: '#06D6A0' // Green for distance
+        }
+    ];
+    
+    // Create stats with color coding
+    stats.forEach((stat, i) => {
+        const yPos = height * 0.35 + (i * 60);
+        
+        const statText = this.add.text(width / 2, yPos, `${stat.label}${stat.value}`, {
+            fontSize: '28px',
+            fill: stat.color,
+            fontFamily: 'Luckiest Guy',
+            stroke: '#000000',
+            strokeThickness: 2,
+            align: 'center'
+        }).setOrigin(0.5)
+         .setDepth(101)
+         .setResolution(3);
 
         this.tweens.add({
-            targets: button,
-            scaleX: 1.08,
-            scaleY: 1.08,
-            yoyo: true,
-            repeat: -1,
-            ease: 'Sine.easeInOut',
-            duration: 600
+            targets: statText,
+            alpha: { from: 0, to: 1 },
+            duration: 500,
+            delay: 300 * i,
+            ease: 'Back'
         });
-    };
-
-    // Restart Button
-    createButton('RESTART', width / 2 - 70, height * 0.55, () => {
-        this.scene.restart();
     });
 
-    // Home Button
-    createButton('HOME', width / 2 + 70, height * 0.55, () => {
-        this.scene.stop();
-        this.scene.start('StartScene');
+    // Confetti Particle Effect
+    const emitter = this.add.particles('heart').createEmitter({
+        x: width / 2,
+        y: 0,
+        speed: { min: 100, max: 200 },
+        angle: { min: 180, max: 360 },
+        scale: { start: 0.04, end: 0 },
+        blendMode: 'SCREEN',
+        lifespan: 3000,
+        gravityY: 300,
+        frequency: 100
     });
-}
+    emitter.depth = 99;
 
+    // Improved Button with Rounded Corners and Simple Hover Effect
+    const nextLevelButton = this.add.text(width / 2, height * 0.8, 'LEVEL 2', {
+        fontSize: '32px',
+        fill: '#FFFFFF',
+        fontFamily: 'Luckiest Guy',
+        backgroundColor: '#729C97',
+        padding: { x: 50, y: 20 },
+        borderRadius: 20, 
+        align: 'center'
+    }).setOrigin(0.5)
+     .setInteractive()
+     .setDepth(102)
+     .setResolution(3);
 
-playHitFeedback() {
-    if (navigator.vibrate) navigator.vibrate(200);
-    this.cameras.main.shake(200, 0.01);
+    // Button animations
     this.tweens.add({
-        targets: this.runner,
-        tint: 0xff0000,
-        yoyo: true,
-        duration: 100,
-        repeat: 2,
-        onComplete: () => this.runner.clearTint()
+        targets: nextLevelButton,
+        alpha: { from: 0, to: 1 },
+        scale: { from: 0.9, to: 1.0 },
+        duration: 800,
+        delay: 1500,
+        ease: 'Elastic'
     });
-   
+
+    // Simple hover effect - just scales up
+    nextLevelButton.on('pointerover', () => {
+        this.tweens.add({
+            targets: nextLevelButton,
+            scale: 1.1,
+            duration: 200,
+            ease: 'Quad.easeOut'
+        });
+    });
+
+    nextLevelButton.on('pointerout', () => {
+        this.tweens.add({
+            targets: nextLevelButton,
+            scale: 1.0,
+            duration: 200,
+            ease: 'Quad.easeOut'
+        });
+    });
+
+    nextLevelButton.on('pointerdown', () => {
+        if (this.clickSound) this.clickSound.play();
+        this.scene.start('Level2Scene', { 
+            lives: this.lives,
+            score: this.score,
+            calories: this.calories,
+            distance: this.distance
+        });
+    });
 }
 
 
-} 
+    playHitFeedback() {
+        if (navigator.vibrate) navigator.vibrate(200);
+        this.cameras.main.shake(200, 0.01);
+        this.tweens.add({
+            targets: this.runner,
+            tint: 0xff0000,
+            yoyo: true,
+            duration: 100,
+            repeat: 2,
+            onComplete: () => this.runner.clearTint()
+        });
+    }
+}
