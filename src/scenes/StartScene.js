@@ -168,7 +168,7 @@ export default class StartScene extends Phaser.Scene {
 
         startButton.on('pointerdown', () => {
             playClickSound();
-            this.scene.start('GameScene', { selectedCharacter: this.selectedCharacter });
+            this.scene.start('GameScene', { selectedCharacter: this.selectedCharacter, startTimer: true});
         });
 
         this.tweens.add({
@@ -182,7 +182,7 @@ export default class StartScene extends Phaser.Scene {
         });
 
         this.input.keyboard.on('keydown-SPACE', () => {
-            this.scene.start('GameScene', { selectedCharacter: this.selectedCharacter });
+            this.scene.start('GameScene', { selectedCharacter: this.selectedCharacter, startTimer: true });
         });
     }
 
