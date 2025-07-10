@@ -1,12 +1,13 @@
 //StartScene.js
+import { supabase } from '../supabaseClient.js';
+
 export default class StartScene extends Phaser.Scene {
     constructor() {
         super({ key: 'StartScene' });
     }
 
     init(data) {
-    // store it so you can use it in create() or pass onwards
-    this.selectedCharacter = data.selectedCharacter;
+        this.selectedCharacter = data.selectedCharacter;
     }
 
     preload() {}
@@ -148,31 +149,36 @@ export default class StartScene extends Phaser.Scene {
         }).setOrigin(0.5);
         startText.setResolution(3);
 
-        const startButton = this.add.container(btnX, btnY, [buttonBg, startText]);
-        startButton.setSize(btnWidth, btnHeight);
-        startButton.setInteractive();
+        this.startButton = this.add.container(btnX, btnY, [buttonBg, startText]);
+        this.startButton.setSize(btnWidth, btnHeight);
+        this.startButton.setInteractive();
+        this.startButton.disableInteractive();  // disables clicks
 
-        startButton.on('pointerover', () => {
+
+        this.startButton.on('pointerover', () => {
             buttonBg.clear();
             buttonBg.fillStyle(hoverColor, 1);
             buttonBg.fillRoundedRect(-btnWidth / 2, -btnHeight / 2, btnWidth, btnHeight, 15);
             this.input.setDefaultCursor('pointer');
         });
 
-        startButton.on('pointerout', () => {
+        this.startButton.on('pointerout', () => {
             buttonBg.clear();
             buttonBg.fillStyle(normalColor, 1);
             buttonBg.fillRoundedRect(-btnWidth / 2, -btnHeight / 2, btnWidth, btnHeight, 15);
             this.input.setDefaultCursor('default');
         });
 
-        startButton.on('pointerdown', () => {
+        this.startButton.on('pointerdown', () => {
             playClickSound();
-            this.scene.start('GameScene', { selectedCharacter: this.selectedCharacter });
+            this.scene.start('GameScene', { 
+                selectedCharacter: this.selectedCharacter,
+                playerName: this.playerName
+            });
         });
 
         this.tweens.add({
-            targets: startButton,
+            targets: this.startButton,
             scaleX: 1.08,
             scaleY: 1.08,
             yoyo: true,
@@ -184,6 +190,8 @@ export default class StartScene extends Phaser.Scene {
         this.input.keyboard.on('keydown-SPACE', () => {
             this.scene.start('GameScene', { selectedCharacter: this.selectedCharacter });
         });
+
+        this.loadPlayerNameFromSupabase();
     }
 
     createTitleText() {
@@ -206,5 +214,175 @@ export default class StartScene extends Phaser.Scene {
             }
         }).setOrigin(0.5);
         title.setResolution(3);
+    }
+
+    startGame() {
+        this.startButton.setInteractive();
+    }
+
+    createNameInput() {
+        const width = this.sys.game.config.width;
+        const height = this.sys.game.config.height;
+
+        // Overlay (same as settings)
+        this.nameOverlay = document.createElement('div');
+        this.nameOverlay.className = 'overlay';
+        this.nameOverlay.style.display = 'block';
+        this.nameOverlay.style.zIndex = 999;
+        document.body.appendChild(this.nameOverlay);
+
+        // Panel container
+        this.namePanel = document.createElement('div');
+        this.namePanel.className = 'panel';
+        this.namePanel.style.display = 'flex';
+        this.namePanel.style.flexDirection = 'column';
+        this.namePanel.style.alignItems = 'center';
+        this.namePanel.style.justifyContent = 'center';
+        this.namePanel.style.padding = '20px';
+        this.namePanel.style.gap = '15px';
+        this.namePanel.style.zIndex = 1000;
+        this.namePanel.style.width = '260px';
+        this.namePanel.style.height = '130px';
+        this.namePanel.style.borderRadius = '15px';
+        this.namePanel.style.boxShadow = '0 6px 16px rgba(0, 0, 0, 0.3)';
+        this.namePanel.style.position = 'absolute';
+        this.namePanel.style.left = '50%';
+        this.namePanel.style.top = '45%';
+        this.namePanel.style.transform = 'translate(-50%, -50%)';
+
+        // Prompt
+        const prompt = document.createElement('p');
+        prompt.textContent = 'ENTER YOUR NAME:';
+        prompt.style.fontSize = '22px';
+        prompt.style.fontFamily = 'Luckiest Guy';
+        prompt.style.letterSpacing = '1.5px';
+        prompt.style.color = '#729C97';
+        prompt.style.margin = '0';
+
+        // Input field
+        const inputWidth = 200;
+        const inputHeight = 25;
+
+        this.nameInputElement = document.createElement('input');
+        this.nameInputElement.type = 'text';
+        this.nameInputElement.placeholder = 'YOUR NAME';
+        this.nameInputElement.style.width = `${inputWidth}px`;
+        this.nameInputElement.style.height = `${inputHeight}px`;
+        this.nameInputElement.style.fontSize = '18px';
+        this.nameInputElement.style.color = '#729C97';
+        this.nameInputElement.style.padding = '8px 12px';
+        this.nameInputElement.style.borderRadius = '8px';
+        this.nameInputElement.style.boxShadow = '0 4px 10px rgba(0,0,0,0.25)';
+        this.nameInputElement.style.fontFamily = 'Luckiest Guy';
+        this.nameInputElement.style.backgroundColor = '#FFF';
+        this.nameInputElement.className = 'name-input';
+
+        const style = document.createElement('style');
+        style.textContent = `
+        .name-input::placeholder {
+            color: #729C97;
+            font-family: 'Luckiest Guy';
+            font-size: 15px;
+            letter-spacing: 1.5px;
+        }
+        `;
+        document.head.appendChild(style);
+
+        // Add elements to panel
+        this.namePanel.appendChild(prompt);
+        this.namePanel.appendChild(this.nameInputElement);
+        document.body.appendChild(this.namePanel);
+
+        // Focus input
+        this.nameInputElement.focus();
+
+        // Handle Enter key
+        this.nameInputElement.addEventListener('keydown', async (event) => {
+            if (event.key === 'Enter') {
+                const val = this.nameInputElement.value.trim();
+                if (val.length > 0) {
+                    localStorage.setItem('playerName', val);
+                    this.playerName = val;
+
+                    const { data: userData, error: userError } = await supabase.auth.getUser();
+                    if (userData?.user) {
+                        const userId = userData.user.id;
+                        await supabase
+                            .from('users')
+                            .upsert({ id: userId, name: val }, { onConflict: ['id'] });
+                    }
+
+                    this.removeNameInput();
+                    this.displayWelcomeMessage(val);
+                    this.startGame();
+                }
+            }
+        });
+    }
+
+   removeNameInput() {
+        if (this.nameOverlay) {
+            this.nameOverlay.remove();
+            this.nameOverlay = null;
+        }
+        if (this.namePanel) {
+            this.namePanel.remove();
+            this.namePanel = null;
+        }
+        if (this.nameInputElement) {
+            this.nameInputElement.remove();
+            this.nameInputElement = null;
+        }
+    }
+
+
+    async loadPlayerNameFromSupabase() {
+        const { data: userData, error: userError } = await supabase.auth.getUser();
+
+        if (userError || !userData.user) {
+            console.warn('User not logged in, falling back to localStorage');
+            this.useLocalStorageName();
+            return;
+        }
+
+        const userId = userData.user.id;
+
+        const { data, error } = await supabase
+            .from('users')
+            .select('name')
+            .eq('id', userId)
+            .single();
+
+        if (error || !data) {
+            console.warn('No player name found in Supabase, using localStorage');
+            this.useLocalStorageName();
+        } else {
+            this.playerName = data.name;
+            this.displayWelcomeMessage(data.name);
+            this.startGame();
+        }
+    }
+
+    useLocalStorageName() {
+        const name = localStorage.getItem('playerName');
+        if (name) {
+            this.playerName = name;
+            this.displayWelcomeMessage(name);
+            this.startGame();
+        } else {
+            this.createNameInput();
+        }
+    }
+
+
+    displayWelcomeMessage(name) {
+        this.add.text(10, 7, `WELCOME, ${name}!`, {
+            fontFamily: 'Arial',
+            fontSize: '18px',
+            fill: '#ffffff',
+            fontStyle: 'bold',
+            stroke: '#000000',
+            strokeThickness: 2
+        }).setDepth(10);
     }
 }

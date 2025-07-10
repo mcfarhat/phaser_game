@@ -114,12 +114,12 @@
       .pause-card {
         background:#59544C;
         border-radius: 25px;
-        padding:10px 25px 20px 25px;
+        padding:13px 25px 20px 25px;
         text-align: center;
         box-shadow: 0 0 15px #00000066;
         position: absolute;
         top: 25%;
-        width: 180px;
+        width: 200px;
         height: 33%;
       }
       .pause-title {
@@ -208,7 +208,63 @@
       </div>
     </div>     
     
-      
+    <!-- Leaderboard Panel -->
+<div id="leaderboard-container" style="
+    display: none;
+    background-color: #59544C;
+    border-radius: 30px;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+    padding: 20px 10px;
+    text-align: center;
+    color: #EFEFEF;
+    position: absolute;
+    flex-direction: column;
+    align-items: center;
+    z-index: 1000;
+    top: 25%;
+    left: 50%;
+    transform: translateX(-50%);
+">
+
+    <h3 style="
+        font-family: 'Luckiest Guy', cursive;
+        background-color: #3f3c36;
+        color: white;
+        border-radius: 35px;
+        margin: 5px 0 20px 0;
+        font-size: 28px;
+        padding: 7px 10px;
+        letter-spacing: 1.2px;
+        display: inline-block;
+        box-shadow: 0 2px 4px #00000088;
+        text-shadow: 2px 2px 4px rgba(0,0,0,1);
+    ">Leaderboard</h3>
+
+    <ul id="leaderboard-list" style="
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        width: 100%;
+        overflow-y: auto;
+        max-height: 200px;
+    "></ul>
+
+    <button id="close-leaderboard" style="
+        margin-top: 25px;
+        background-color: #7AAFBA;
+        color: #333;
+        font-size: 23px;
+        padding: 10px 25px;
+        border: none;
+        border-radius: 50px;
+        cursor: pointer;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+        transition: transform 0.1s ease;
+        font-family: 'Luckiest Guy', cursive;
+    ">CLOSE</button>
+</div>
+
+
     <!-- The div where Phaser will inject the game canvas -->
     <div id="game-container"></div>
 
@@ -229,6 +285,16 @@
         document.getElementById('pauseOverlay').style.display = 'none';
         this.scene.resume('GameScene');
       });
+
+      window.addEventListener('load', () => {
+      const closeBtn = document.getElementById('close-leaderboard');
+      const leaderboardPanel = document.getElementById('leaderboard-container');
+
+      closeBtn.addEventListener('click', () => {
+        leaderboardPanel.style.display = 'none';
+      });
+    });
+
     </script>
 </body>
 </html>

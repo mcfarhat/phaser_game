@@ -1,32 +1,131 @@
 import { PLAYER_CONFIGS, powerUpTypes, hazardTypes, obstacleTypes } from '../config.js';
 import { supabase } from '../supabaseClient.js';
 
-    async function submitScore(player_name, score, calories) {
+async function submitScore(player_name, score, calories) {
+    const { data: existing, error: fetchError } = await supabase
+        .from('leaderboard')
+        .select('*')
+        .eq('player_name', player_name)
+        .single();
+
+    if (fetchError && fetchError.code !== 'PGRST116') {
+        console.error('Error checking existing score:', fetchError.message);
+        return;
+    }
+
+    if (!existing || score > existing.score || calories > existing.calories) {
+        console.log("Submitting:", {
+            player_name,
+            score: Math.max(score, existing?.score ?? 0),
+            calories: Math.max(calories, existing?.calories ?? 0),
+            existing
+        });
+
         const { data, error } = await supabase
             .from('leaderboard')
-            .insert([{ player_name: player_name, score, calories }]);
+            .upsert([
+                {
+                    player_name,
+                    score: Math.max(score, existing?.score ?? 0),
+                    calories: Math.max(calories, existing?.calories ?? 0)
+                }
+            ], { onConflict: ['player_name'] });
 
         if (error) {
-            console.error('Error submitting score:', error.message);
+            console.error('Error updating leaderboard:', error.message);
         } else {
-            console.log('Score submitted:', data);
+            console.log('Leaderboard updated:', data);
         }
+    } else {
+        console.log('Score not high enough to update.');
     }
+}
 
-    async function getTopScores(limit = 10) {
-        const { data, error } = await supabase
-            .from('leaderboard')
-            .select('*')
-            .order('score', { ascending: false })
-            .limit(limit);
+async function fetchAndDisplayLeaderboard() {
+  const leaderboardList = document.getElementById('leaderboard-list');
+  leaderboardList.innerHTML = `
+    <li style="
+      text-align: center;
+      font-family: 'Luckiest Guy', cursive;
+      font-size: 20px;
+    //   padding: 10px;
+      color: #ccc;
+    ">Loading...</li>
+  `;
 
-        if (error) {
-            console.error('Error fetching leaderboard:', error.message);
-            return [];
-        }
+  const { data, error } = await supabase
+    .from('leaderboard')
+    .select('*')
+    .order('score', { ascending: false })
+    .order('calories', { ascending: false });
 
-        return data;
-    }
+  if (error) {
+    leaderboardList.innerHTML = `
+      <li style="color: white; font-size: 20px;">Failed to load leaderboard</li>
+    `;
+    console.error('Error fetching leaderboard:', error.message);
+    return;
+  }
+
+  leaderboardList.innerHTML = '';
+
+data.forEach(({ player_name, score, calories }, index) => {
+  const li = document.createElement('li');
+  li.style.display = 'flex';
+  li.style.alignItems = 'center';
+  li.style.justifyContent = 'start';
+  li.style.margin = '20px 20px';
+  li.style.fontSize = '20px';
+  li.style.fontFamily = "'Luckiest Guy', cursive";
+  li.style.letterSpacing = '1.5px';
+  li.style.gap = '20px';
+
+  const wrapperId = `leaderboard-stats-${index}`;
+
+  li.innerHTML = `
+    <span style="width: 30px; text-align: center; color: #fff;">
+      <strong>${index + 1}</strong>
+    </span>
+
+    <span style="color: #fff; letter-spacing: 1.5px;">
+      ${player_name}
+    </span>
+
+    <span id="${wrapperId}" style="
+      padding: 2px 10px 2px 30px;
+      background-color: #fff;
+      border-radius: 5px;
+      color: #3f3c36;
+      display: flex;
+      gap: 15px;
+      align-items: center;
+      font-size: 20px;
+      position: relative;
+    ">
+      <img src="assets/icons/medals.svg" alt="medal" style="
+        width: 40px;
+        height: 40px;
+        position: absolute;
+        left: -13px;
+        top: 50%;
+        transform: translateY(-50%);
+      ">
+      <span>${score} pts</span>
+      <span>${calories} j</span>
+    </span>
+  `;
+
+  leaderboardList.appendChild(li);
+});
+
+
+}
+
+async function showLeaderboardUI() {
+  document.getElementById('leaderboard-container').style.display = 'flex';
+  await fetchAndDisplayLeaderboard();
+}
+
 
     export default class GameScene extends Phaser.Scene {
         constructor() {
@@ -41,8 +140,8 @@ import { supabase } from '../supabaseClient.js';
     }
 
     init(data) {
-        // now data.selectedCharacter is what you passed
         this.selectedCharacter = data.selectedCharacter;
+        this.playerName = data.playerName;
     }
     
     preload() {}
@@ -101,7 +200,7 @@ import { supabase } from '../supabaseClient.js';
 
         this.scoreText = this.add.text(10, 7, 'SCORE: 0', 
         { 
-            fontSize: '19px', 
+            fontSize: '17px', 
             fill: '#fff', 
             fontFamily: 'Arial', 
             fontStyle: 'bold',
@@ -119,9 +218,9 @@ import { supabase } from '../supabaseClient.js';
         }).setScrollFactor(0);
         this.scoreText.setResolution(3);
 
-        this.caloriesText = this.add.text(130, 7, 'CALORIES: 0', 
+        this.caloriesText = this.add.text(150, 7, 'CALORIES: 0', 
         { 
-            fontSize: '19px', 
+            fontSize: '17px', 
             fill: '#fff', 
             fontFamily: 'Arial', 
             fontStyle: 'bold',
@@ -139,9 +238,9 @@ import { supabase } from '../supabaseClient.js';
         }).setScrollFactor(0);
         this.caloriesText.setResolution(3);
 
-        this.timerText = this.add.text(280, 7, 'Time: 0 s', 
+        this.timerText = this.add.text(310, 7, 'Time: 0 s', 
         { 
-            fontSize: '19px', 
+            fontSize: '17px', 
             fill: '#fff', 
             fontFamily: 'Arial', 
             fontStyle: 'bold',
@@ -158,9 +257,9 @@ import { supabase } from '../supabaseClient.js';
         }).setScrollFactor(0);
         this.timerText.setResolution(3);
 
-        this.distanceText = this.add.text(400, 7, 'Distance: 0 m', 
+        this.distanceText = this.add.text(420, 7, 'Distance: 0 m', 
         { 
-            fontSize: '19px', 
+            fontSize: '17px', 
             fill: '#fff', 
             fontFamily: 'Arial', 
             fontStyle: 'bold',
@@ -469,7 +568,6 @@ import { supabase } from '../supabaseClient.js';
             callbackScope: this,
             loop: true
         });
-
     }
 
     update(time, delta) {
@@ -512,8 +610,8 @@ import { supabase } from '../supabaseClient.js';
         this.timerText.setText('TIME: ' + elapsed + ' s');
         const deltaSeconds = delta / 1000;
         this.distance += this.gameSpeed * deltaSeconds / 10;
-        this.caloriesText.setText('CALORIES: ' + this.calories);
-        this.scoreText.setText('SCORE: ' + this.score);
+        this.caloriesText.setText('CALORIES: ' + this.calories + ' j');
+        this.scoreText.setText('SCORE: ' + this.score + ' pts');
 
         this.distanceText.setText('DISTANCE: ' + Math.floor(this.distance) + ' m');
     }
@@ -559,11 +657,13 @@ import { supabase } from '../supabaseClient.js';
         }
     }
     
-    
-    isTooClose(newX, newY) {
-        const dx = Math.abs(newX - this.lastSpawnedItemX);
-        const dy = Math.abs(newY - this.lastSpawnedItemY);
-        return dx < this.minDistanceBetweenItems && dy < this.minYDistanceBetweenItems;
+    isTooClose(x, y) {
+        const minXGap = 500;
+        const minYGap = 100; 
+        return (
+            Math.abs(x - this.lastSpawnedItemX) < minXGap &&
+            Math.abs(y - this.lastSpawnedItemY) < minYGap
+        );
     }
 
     spawnPowerUp() {
@@ -573,7 +673,7 @@ import { supabase } from '../supabaseClient.js';
 
         let y, attempts = 0;
         do {
-            y = Phaser.Math.Between(...this.itemSpawnHeightRange);
+            y = Phaser.Math.Between(...this.itemSpawnHeightRange) - 80;
         } while (this.isTooClose(currentX, y) && ++attempts < 10);
 
         const item = this.powerUps.create(currentX, y, key);
@@ -592,7 +692,7 @@ import { supabase } from '../supabaseClient.js';
 
         let y, attempts = 0;
         do {
-            y = Phaser.Math.Between(...this.itemSpawnHeightRange);
+            y = Phaser.Math.Between(...this.itemSpawnHeightRange) - 50;
         } while (this.isTooClose(currentX, y) && ++attempts < 10);
 
         const item = this.hazards.create(currentX, y, key);
@@ -616,9 +716,8 @@ import { supabase } from '../supabaseClient.js';
         obstacle.body.allowGravity = false;
         obstacle.setImmovable(true);
         obstacle.setDepth(5);
-        // Shrink the obstacle hitbox and lower it to the feet/base
-        obstacle.body.setSize(60, 40);       // width, height of collider box
-        obstacle.body.setOffset(25, 70);     // x and y offset inside the sprite
+        obstacle.body.setSize(60, 40);
+        obstacle.body.setOffset(25, 70);
     }
 
    collectPowerUp(player, item) {
@@ -687,7 +786,7 @@ import { supabase } from '../supabaseClient.js';
         }
     }
 
-    gameOver() {
+    async gameOver() {
         this.togglePause(true);
         // Stop player movement and animation
         this.runner.setVelocity(0);
@@ -705,43 +804,16 @@ import { supabase } from '../supabaseClient.js';
             }
         });
 
+        const width = this.sys.game.config.width;
+        const height = this.sys.game.config.height;
 
-    const width = this.sys.game.config.width;
-    const height = this.sys.game.config.height;
-
-    // GAME OVER Text
-    const gameOverText = this.add.text(width / 2, height * 0.35, 'GAME OVER', {
-        fontSize: '48px',
-        fill: '#fff',
-        fontFamily: 'Luckiest Guy',
-        stroke: '#729C97',
-        strokeThickness: 6,
-        shadow: {
-            offsetX: 1,
-            offsetY: 1,
-            color: '#000',
-            blur: 8,
-            stroke: true,
-            fill: true
-        }
-    }).setOrigin(0.5).setResolution(3);
-
-    // Common button function
-    const createButton = (label, x, y, callback) => {
-        const btnWidth = 100;
-        const btnHeight = 45;
-        const normalColor = 0x729C97;
-        const hoverColor = 0x7AAFBA;
-
-        const buttonBg = this.add.graphics();
-        buttonBg.fillStyle(normalColor, 1);
-        buttonBg.fillRoundedRect(-btnWidth / 2, -btnHeight / 2, btnWidth, btnHeight, 15);
-
-        const buttonText = this.add.text(0, 0, label, {
-            fontSize: '21px',
+        // GAME OVER Text
+        const gameOverText = this.add.text(width / 2, height * 0.35, 'GAME OVER', {
+            fontSize: '48px',
             fill: '#fff',
-            fontFamily: 'Arial',
-            fontStyle: 'bold',
+            fontFamily: 'Luckiest Guy',
+            stroke: '#729C97',
+            strokeThickness: 6,
             shadow: {
                 offsetX: 1,
                 offsetY: 1,
@@ -749,53 +821,85 @@ import { supabase } from '../supabaseClient.js';
                 blur: 8,
                 stroke: true,
                 fill: true
-            },
+            }
         }).setOrigin(0.5).setResolution(3);
 
-        const button = this.add.container(x, y, [buttonBg, buttonText]);
-        button.setSize(btnWidth, btnHeight);
-        button.setInteractive();
-
-        button.on('pointerover', () => {
-            buttonBg.clear();
-            buttonBg.fillStyle(hoverColor, 1);
-            buttonBg.fillRoundedRect(-btnWidth / 2, -btnHeight / 2, btnWidth, btnHeight, 15);
-            this.input.setDefaultCursor('pointer');
+        this.time.delayedCall(200, async () => {
+            const playerName = localStorage.getItem('playerName');
+            await submitScore(playerName, this.score, this.calories);
+            await showLeaderboardUI();
         });
 
-        button.on('pointerout', () => {
-            buttonBg.clear();
+        // Common button function
+        const createButton = (label, x, y, callback) => {
+            const btnWidth = 100;
+            const btnHeight = 45;
+            const normalColor = 0x729C97;
+            const hoverColor = 0x7AAFBA;
+
+            const buttonBg = this.add.graphics();
             buttonBg.fillStyle(normalColor, 1);
             buttonBg.fillRoundedRect(-btnWidth / 2, -btnHeight / 2, btnWidth, btnHeight, 15);
-            this.input.setDefaultCursor('default');
-        });
 
-        button.on('pointerdown', () => {
-            if (this.clickSound) this.clickSound.play();
-            callback();
-        });
+            const buttonText = this.add.text(0, 0, label, {
+                fontSize: '21px',
+                fill: '#fff',
+                fontFamily: 'Arial',
+                fontStyle: 'bold',
+                shadow: {
+                    offsetX: 1,
+                    offsetY: 1,
+                    color: '#000',
+                    blur: 8,
+                    stroke: true,
+                    fill: true
+                },
+            }).setOrigin(0.5).setResolution(3);
 
-        this.tweens.add({
-            targets: button,
-            scaleX: 1.08,
-            scaleY: 1.08,
-            yoyo: true,
-            repeat: -1,
-            ease: 'Sine.easeInOut',
-            duration: 600
-        });
-        };
+            const button = this.add.container(x, y, [buttonBg, buttonText]);
+            button.setSize(btnWidth, btnHeight);
+            button.setInteractive();
 
-        // Restart Button
-        createButton('RESTART', width / 2 - 70, height * 0.55, () => {
-            this.scene.restart();
-        });
+            button.on('pointerover', () => {
+                buttonBg.clear();
+                buttonBg.fillStyle(hoverColor, 1);
+                buttonBg.fillRoundedRect(-btnWidth / 2, -btnHeight / 2, btnWidth, btnHeight, 15);
+                this.input.setDefaultCursor('pointer');
+            });
 
-        // Home Button
-        createButton('HOME', width / 2 + 70, height * 0.55, () => {
-            this.scene.stop();
-            this.scene.start('StartScene');
-        });
+            button.on('pointerout', () => {
+                buttonBg.clear();
+                buttonBg.fillStyle(normalColor, 1);
+                buttonBg.fillRoundedRect(-btnWidth / 2, -btnHeight / 2, btnWidth, btnHeight, 15);
+                this.input.setDefaultCursor('default');
+            });
+
+            button.on('pointerdown', () => {
+                if (this.clickSound) this.clickSound.play();
+                callback();
+            });
+
+            this.tweens.add({
+                targets: button,
+                scaleX: 1.08,
+                scaleY: 1.08,
+                yoyo: true,
+                repeat: -1,
+                ease: 'Sine.easeInOut',
+                duration: 600
+            });
+            };
+
+            // Restart Button
+            createButton('RESTART', width / 2 - 70, height * 0.55, () => {
+                this.scene.restart();
+            });
+
+            // Home Button
+            createButton('HOME', width / 2 + 70, height * 0.55, () => {
+                this.scene.stop();
+                this.scene.start('StartScene');
+            });
     }
 
 

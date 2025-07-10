@@ -77,7 +77,8 @@ export default class BootScene extends Phaser.Scene {
             });
         });
 
-        this.load.image('heart', 'assets/heart.svg');
+        this.load.image('heart', 'assets/icons/heart.svg');
+        this.load.image('medal', 'assest/icons/medals.svg');
     }
 
     create() {
