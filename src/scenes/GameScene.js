@@ -13,9 +13,12 @@ export default class GameScene extends Phaser.Scene {
     }
 
     init(data) {
-    // now data.selectedCharacter is what you passed
-    this.selectedCharacter = data.selectedCharacter;
-  }
+        this.selectedCharacter = data.selectedCharacter;
+        if (data.startTimer) {
+            this.levelDuration = 5 * 60 * 1000; // 5 minutes
+            this.shouldStartTimer = true;
+        }
+    }
     
     preload() {}
 
@@ -69,10 +72,8 @@ export default class GameScene extends Phaser.Scene {
         this.calories = 0;
         this.lives = 3;
         this.distance = 0;
-        this.startTime = this.time.now;
-        this.levelDuration = 5 * 60 * 1000; // 5 minutes in milliseconds
-        this.levelEndTime = this.startTime + this.levelDuration;
         this.levelEnded = false;
+        this.timerStarted = false;
 
         this.scoreText = this.add.text(10, 7, 'SCORE: 0', 
         { 
@@ -443,16 +444,24 @@ export default class GameScene extends Phaser.Scene {
             callbackScope: this,
             loop: true
         });
-
+        if (this.shouldStartTimer) {
+            this.time.delayedCall(0, () => this.startTimer());
+        }
     }
 
     update(time, delta) {
         if (this.levelEnded) return;
 
-        if (time > this.levelEndTime && !this.levelEnded) {
+        if (this.shouldStartTimer && !this.timerStarted) {
+            this.startTimer();
+        }
+
+        // Only check level completion if timer is running
+        if (this.timerStarted && time > this.levelEndTime && !this.levelEnded) {
             this.levelCompleted();
             return;
         }
+
 
         if (this.isPaused) return;
 
@@ -474,11 +483,11 @@ export default class GameScene extends Phaser.Scene {
         }
 
         if (Phaser.Input.Keyboard.JustDown(this.spacebar)) {
-    if (this.jumpCount < 2) {
-        this.runner.setVelocityY(-jumpHeight);
-        this.jumpCount++;
-    }
-}
+            if (this.jumpCount < 2) {
+                this.runner.setVelocityY(-jumpHeight);
+                this.jumpCount++;
+            }
+        }
 
 
         // ✅ Cleanup
@@ -495,10 +504,21 @@ export default class GameScene extends Phaser.Scene {
         this.scoreText.setText('SCORE: ' + this.score);
 
         this.distanceText.setText('DISTANCE: ' + Math.floor(this.distance) + ' m');
-        const timeLeft = Math.max(0, this.levelEndTime - time);
-        const minutes = Math.floor(timeLeft / 60000);
-        const seconds = Math.floor((timeLeft % 60000) / 1000);
-        this.timeLeftText.setText(`TIME: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`);
+        if (this.timerStarted) {
+            const timeLeft = Math.max(0, this.levelEndTime - time);
+            const minutes = Math.floor(timeLeft / 60000);
+            const seconds = Math.floor((timeLeft % 60000) / 1000);
+            this.timeLeftText.setText(`TIME: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`);
+        } else {
+            this.timeLeftText.setText(`TIME: 5:00`);
+        }
+
+    }
+
+    startTimer() {
+        this.startTime = this.time.now;
+        this.levelEndTime = this.startTime + this.levelDuration;
+        this.timerStarted = true; // Mark timer as started
     }
 
     togglePause(pause) {
