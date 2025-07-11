@@ -1,4 +1,4 @@
-import { PLAYER_CONFIGS, powerUpTypes, hazardTypes, obstacleTypes } from '../config.js';
+import { PLAYER_CONFIGS, LEVEL_CONFIGS,powerUpTypes, hazardTypes, obstacleTypes } from '../config.js';
 
 export default class GameScene extends Phaser.Scene {
     constructor() {
@@ -18,6 +18,7 @@ export default class GameScene extends Phaser.Scene {
     init(data) {
     // now data.selectedCharacter is what you passed
     this.selectedCharacter = data.selectedCharacter;
+    this.selectedLevel = data.selectedLevel ; //for level
   }
     
     preload() {}
@@ -26,11 +27,14 @@ export default class GameScene extends Phaser.Scene {
     create() {
         const { width, height } = this.sys.game.config;
         const config = PLAYER_CONFIGS.find(p => p.key === this.selectedCharacter);
-        this.calorieBurnRate = config.calorieBurnRate;
-this.jumpCalorieBurn = config.jumpCalorieBurn;
-this.speedIncreaseInterval = config.speedIncreaseInterval;
-this.speedIncrement = config.speedIncrement;
-this.maxGameSpeed = config.maxGameSpeed;
+        const levelConfig = LEVEL_CONFIGS.find(l => l.level === this.selectedLevel) || LEVEL_CONFIGS[0];
+
+this.calorieBurnRate = levelConfig.calorieBurnRate;
+this.jumpCalorieBurn = levelConfig.jumpCalorieBurn;
+this.speedIncreaseInterval = levelConfig.speedIncreaseInterval;
+this.speedIncrement = levelConfig.speedIncrement;
+this.maxGameSpeed = levelConfig.maxGameSpeed;
+
 
         this.isPaused = false;
         
