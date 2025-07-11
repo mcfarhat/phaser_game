@@ -9,7 +9,6 @@ export default class BootScene extends Phaser.Scene {
 
     preload() {
         console.log('BootScene: preload()');
-
         // Loading screen visuals
         const progressBox = this.add.graphics();
         const progressBar = this.add.graphics();

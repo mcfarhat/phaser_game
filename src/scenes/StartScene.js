@@ -1,6 +1,6 @@
 //StartScene.js
 import { supabase } from '../supabaseClient.js';
-import { fetchAndDisplayLeaderboard, showLeaderboardUI } from './GameScene.js';
+import { showLeaderboardUI } from './GameScene.js';
 
 export default class StartScene extends Phaser.Scene {
     constructor() {
@@ -9,6 +9,8 @@ export default class StartScene extends Phaser.Scene {
 
     init(data) {
         this.selectedCharacter = data.selectedCharacter;
+        this.playerName = data.playerName;
+        this.startTimer = data.startTimer;
     }
 
     preload() {}
@@ -198,7 +200,8 @@ export default class StartScene extends Phaser.Scene {
             playClickSound();
             this.scene.start('GameScene', { 
                 selectedCharacter: this.selectedCharacter,
-                playerName: this.playerName
+                playerName: this.playerName,
+                startTimer: true
             });
         });
 

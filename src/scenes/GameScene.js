@@ -42,84 +42,82 @@ async function submitScore(player_name, score, calories) {
 }
 
 export async function fetchAndDisplayLeaderboard() {
-  const leaderboardList = document.getElementById('leaderboard-list');
-  leaderboardList.innerHTML = `
-    <li style="
-      text-align: center;
-      font-family: 'Luckiest Guy', cursive;
-      font-size: 17px;
-    //   padding: 10px;
-      color: #ccc;
-    ">Loading...</li>
-  `;
-
-  const { data, error } = await supabase
-    .from('leaderboard')
-    .select('*')
-    .order('score', { ascending: false })
-    .order('calories', { ascending: false })
-    .limit(5);
-
-  if (error) {
+    const leaderboardList = document.getElementById('leaderboard-list');
     leaderboardList.innerHTML = `
-      <li style="color: white; font-size: 20px;">Failed to load leaderboard</li>
+        <li style="
+        text-align: center;
+        font-family: 'Luckiest Guy', cursive;
+        font-size: 17px;
+        //   padding: 10px;
+        color: #ccc;
+        ">Loading...</li>
     `;
-    console.error('Error fetching leaderboard:', error.message);
-    return;
-  }
 
-  leaderboardList.innerHTML = '';
+    const { data, error } = await supabase
+        .from('leaderboard')
+        .select('*')
+        .order('score', { ascending: false })
+        .order('calories', { ascending: false })
+        .limit(5);
 
-data.forEach(({ player_name, score, calories }, index) => {
-  const li = document.createElement('li');
-  li.style.display = 'flex';
-  li.style.alignItems = 'center';
-  li.style.justifyContent = 'start';
-  li.style.margin = '20px 20px';
-  li.style.fontSize = '17px';
-  li.style.fontFamily = "'Luckiest Guy', cursive";
-  li.style.letterSpacing = '1.5px';
-  li.style.gap = '20px';
+    if (error) {
+        leaderboardList.innerHTML = `
+        <li style="color: white; font-size: 20px;">Failed to load leaderboard</li>
+        `;
+        console.error('Error fetching leaderboard:', error.message);
+        return;
+    }
 
-  const wrapperId = `leaderboard-stats-${index}`;
+    leaderboardList.innerHTML = '';
 
-  li.innerHTML = `
-    <span style="width: 30px; text-align: center; color: #fff;">
-      <strong>${index + 1}</strong>
-    </span>
+    data.forEach(({ player_name, score, calories }, index) => {
+    const li = document.createElement('li');
+    li.style.display = 'flex';
+    li.style.alignItems = 'center';
+    li.style.justifyContent = 'start';
+    li.style.margin = '20px 20px';
+    li.style.fontSize = '17px';
+    li.style.fontFamily = "'Luckiest Guy', cursive";
+    li.style.letterSpacing = '1.5px';
+    li.style.gap = '20px';
 
-    <span style="color: #fff; letter-spacing: 1.5px;">
-      ${player_name}
-    </span>
+    const wrapperId = `leaderboard-stats-${index}`;
 
-    <span id="${wrapperId}" style="
-      padding: 2px 20px 2px 40px;
-      background-color: #fff;
-      border-radius: 5px;
-      color: #3f3c36;
-      display: flex;
-      gap: 20px;
-      align-items: center;
-      font-size: 17px;
-      position: relative;
-    ">
-      <img src="assets/icons/medals.svg" alt="medal" style="
-        width: 40px;
-        height: 40px;
-        position: absolute;
-        left: -13px;
-        top: 50%;
-        transform: translateY(-50%);
-      ">
-      <span>${score}</span>
-      <span>${calories}</span>
-    </span>
-  `;
+    li.innerHTML = `
+        <span style="width: 30px; text-align: center; color: #fff;">
+        <strong>${index + 1}</strong>
+        </span>
 
-  leaderboardList.appendChild(li);
-});
+        <span style="color: #fff; letter-spacing: 1.5px;">
+        ${player_name}
+        </span>
 
+        <span id="${wrapperId}" style="
+        padding: 2px 20px 2px 40px;
+        background-color: #fff;
+        border-radius: 5px;
+        color: #3f3c36;
+        display: flex;
+        gap: 20px;
+        align-items: center;
+        font-size: 17px;
+        position: relative;
+        ">
+        <img src="assets/icons/medals.svg" alt="medal" style="
+            width: 40px;
+            height: 40px;
+            position: absolute;
+            left: -13px;
+            top: 50%;
+            transform: translateY(-50%);
+        ">
+        <span>${score}</span>
+        <span>${calories}</span>
+        </span>
+    `;
 
+    leaderboardList.appendChild(li);
+    });
 }
 
 export async function showLeaderboardUI() {
@@ -144,6 +142,10 @@ export async function showLeaderboardUI() {
     init(data) {
         this.selectedCharacter = data.selectedCharacter;
         this.playerName = data.playerName;
+        if (data.startTimer) {
+            this.levelDuration = 5 * 60 * 1000; // 5 minutes
+            this.shouldStartTimer = true;
+        }
     }
     
     preload() {}
@@ -198,7 +200,8 @@ export async function showLeaderboardUI() {
         this.calories = 0;
         this.lives = 3;
         this.distance = 0;
-        this.startTime = this.time.now;
+        this.levelEnded = false;
+        this.timerStarted = false;
 
         this.scoreText = this.add.text(10, 7, 'SCORE: 0', 
         { 
@@ -240,7 +243,7 @@ export async function showLeaderboardUI() {
         }).setScrollFactor(0);
         this.caloriesText.setResolution(3);
 
-        this.timerText = this.add.text(270, 7, 'Time: 0 s', 
+        this.timeLeftText = this.add.text(270, 7, 'TIME: 5:00', 
         { 
             fontSize: '15px', 
             fill: '#fff', 
@@ -256,8 +259,8 @@ export async function showLeaderboardUI() {
                 stroke: true,
                 fill: true
             } 
-        }).setScrollFactor(0);
-        this.timerText.setResolution(3);
+        }).setScrollFactor(0);  
+        this.timeLeftText.setResolution(3);
 
         this.distanceText = this.add.text(390, 7, 'Distance: 0 m', 
         { 
@@ -593,9 +596,25 @@ export async function showLeaderboardUI() {
             callbackScope: this,
             loop: true
         });
+        if (this.shouldStartTimer) {
+            this.time.delayedCall(0, () => this.startTimer());
+        }
     }
 
     update(time, delta) {
+        if (this.levelEnded) return;
+
+        if (this.shouldStartTimer && !this.timerStarted) {
+            this.startTimer();
+        }
+
+        // Only check level completion if timer is running
+        if (this.timerStarted && time > this.levelEndTime && !this.levelEnded) {
+            this.levelCompleted();
+            return;
+        }
+
+
         if (this.isPaused) return;
 
         this.background.tilePositionX += this.gameSpeed;
@@ -631,14 +650,26 @@ export async function showLeaderboardUI() {
             if (item.x < -item.width) item.destroy();
         });
 
-        const elapsed = Math.floor((time - this.startTime) / 1000);
-        this.timerText.setText('TIME: ' + elapsed + ' s');
         const deltaSeconds = delta / 1000;
         this.distance += this.gameSpeed * deltaSeconds / 10;
         this.caloriesText.setText('CALORIES: ' + this.calories );
         this.scoreText.setText('SCORE: ' + this.score);
-
         this.distanceText.setText('DISTANCE: ' + Math.floor(this.distance) + ' m');
+        if (this.timerStarted) {
+            const timeLeft = Math.max(0, this.levelEndTime - time);
+            const minutes = Math.floor(timeLeft / 60000);
+            const seconds = Math.floor((timeLeft % 60000) / 1000);
+            this.timeLeftText.setText(`TIME: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`);
+        } else {
+            this.timeLeftText.setText(`TIME: 5:00`);
+        }
+
+    }
+
+    startTimer() {
+        this.startTime = this.time.now;
+        this.levelEndTime = this.startTime + this.levelDuration;
+        this.timerStarted = true; // Mark timer as started
     }
 
     togglePause(pause) {
@@ -744,8 +775,7 @@ export async function showLeaderboardUI() {
         obstacle.body.setSize(60, 40);
         obstacle.body.setOffset(25, 70);
     }
-
-   collectPowerUp(player, item) {
+    collectPowerUp(player, item) {
         const data = powerUpTypes.find(p => p.key === item.texture.key);
         if (!data) return;
 
@@ -811,23 +841,26 @@ export async function showLeaderboardUI() {
         }
     }
 
-    async gameOver() {
+    gameOver() {
         this.togglePause(true);
+
         // Stop player movement and animation
         this.runner.setVelocity(0);
         this.runner.anims.stop();
+
         // Fall animation (rotate and drop to ground)
         this.tweens.add({
-            targets: this.runner,
-            y: this.runner.y + 50,       // Drop slightly to the ground
-            angle: 80,                   
-            duration: 500,               // Faster impact
-            ease: 'Cubic.easeIn',
-            onComplete: () => {
-                this.runner.setVelocity(0);
-                this.runner.body.allowGravity = false;
-            }
+        targets: this.runner,
+        y: this.runner.y + 50,       // Drop slightly to the ground
+        angle: 80,                   
+        duration: 500,               // Faster impact
+        ease: 'Cubic.easeIn',
+        onComplete: () => {
+            this.runner.setVelocity(0);
+            this.runner.body.allowGravity = false;
+        }
         });
+
 
         const width = this.sys.game.config.width;
         const height = this.sys.game.config.height;
@@ -913,19 +946,177 @@ export async function showLeaderboardUI() {
                 ease: 'Sine.easeInOut',
                 duration: 600
             });
-            };
+        };
 
-            // Restart Button
-            createButton('RESTART', width / 2 - 70, height * 0.55, () => {
-                this.scene.restart();
-            });
+        // Restart Button
+        createButton('RESTART', width / 2 - 70, height * 0.55, () => {
+            this.scene.restart();
+        });
 
-            // Home Button
-            createButton('HOME', width / 2 + 70, height * 0.55, () => {
-                this.scene.stop();
-                this.scene.start('StartScene');
-            });
+        // Home Button
+        createButton('HOME', width / 2 + 70, height * 0.55, () => {
+            this.scene.stop();
+            this.scene.start('StartScene');
+        });
     }
+
+    levelCompleted() {
+        this.levelEnded = true;
+        this.togglePause(true);
+        
+        // Stop player movement and animation
+        this.runner.setVelocity(0);
+        this.runner.anims.stop();
+        
+        this.showLevelCompleteScreen();
+    }
+
+    showLevelCompleteScreen() {
+    const width = this.sys.game.config.width;
+    const height = this.sys.game.config.height;
+
+    // Overlay
+    const overlay = this.add.rectangle(0, 0, width, height, 0x000000, 0.7)
+        .setOrigin(0)
+        .setDepth(100);
+    
+    // Pulsing Title Animation
+    const levelCompleteText = this.add.text(width / 2, height * 0.2, 'LEVEL COMPLETE!', {
+        fontSize: '48px',
+        fill: '#7FFF00',
+        fontFamily: 'Luckiest Guy',
+        stroke: '#729C97',
+        strokeThickness: 6,
+        align: 'center'
+    }).setOrigin(0.5)
+     .setDepth(101)
+     .setResolution(3);
+
+    this.tweens.add({
+        targets: levelCompleteText,
+        scale: { from: 1.1, to: 1.2 },
+        duration: 1500,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut'
+    });
+
+    // Stats with custom colors
+    const stats = [
+        { 
+            label: 'HEARTS REMAINING: ', 
+            value: this.lives,
+            color: '#FF6B6B' // Coral red for hearts
+        },
+        { 
+            label: 'SCORE: ', 
+            value: this.score,
+            color: '#4ECDC4' // Turquoise for score
+        },
+        { 
+            label: 'CALORIES: ', 
+            value: this.calories,
+            color: '#FFD166' // Yellow for calories
+        },
+        { 
+            label: 'DISTANCE: ', 
+            value: `${Math.floor(this.distance)}m`,
+            color: '#06D6A0' // Green for distance
+        }
+    ];
+    
+    // Create stats with color coding
+    stats.forEach((stat, i) => {
+        const yPos = height * 0.35 + (i * 60);
+        
+        const statText = this.add.text(width / 2, yPos, `${stat.label}${stat.value}`, {
+            fontSize: '28px',
+            fill: stat.color,
+            fontFamily: 'Luckiest Guy',
+            stroke: '#000000',
+            strokeThickness: 2,
+            align: 'center'
+        }).setOrigin(0.5)
+         .setDepth(101)
+         .setResolution(3);
+
+        this.tweens.add({
+            targets: statText,
+            alpha: { from: 0, to: 1 },
+            duration: 500,
+            delay: 300 * i,
+            ease: 'Back'
+        });
+    });
+
+    // Confetti Particle Effect
+    const emitter = this.add.particles('heart').createEmitter({
+        x: width / 2,
+        y: 0,
+        speed: { min: 100, max: 200 },
+        angle: { min: 180, max: 360 },
+        scale: { start: 0.04, end: 0 },
+        blendMode: 'SCREEN',
+        lifespan: 3000,
+        gravityY: 300,
+        frequency: 100
+    });
+    emitter.depth = 99;
+
+    // Improved Button with Rounded Corners and Simple Hover Effect
+    const nextLevelButton = this.add.text(width / 2, height * 0.8, 'LEVEL 2', {
+        fontSize: '32px',
+        fill: '#FFFFFF',
+        fontFamily: 'Luckiest Guy',
+        backgroundColor: '#729C97',
+        padding: { x: 50, y: 20 },
+        borderRadius: 20, 
+        align: 'center'
+    }).setOrigin(0.5)
+     .setInteractive()
+     .setDepth(102)
+     .setResolution(3);
+
+    // Button animations
+    this.tweens.add({
+        targets: nextLevelButton,
+        alpha: { from: 0, to: 1 },
+        scale: { from: 0.9, to: 1.0 },
+        duration: 800,
+        delay: 1500,
+        ease: 'Elastic'
+    });
+
+    // Simple hover effect - just scales up
+    nextLevelButton.on('pointerover', () => {
+        this.tweens.add({
+            targets: nextLevelButton,
+            scale: 1.1,
+            duration: 200,
+            ease: 'Quad.easeOut'
+        });
+    });
+
+    nextLevelButton.on('pointerout', () => {
+        this.tweens.add({
+            targets: nextLevelButton,
+            scale: 1.0,
+            duration: 200,
+            ease: 'Quad.easeOut'
+        });
+    });
+
+    nextLevelButton.on('pointerdown', () => {
+        if (this.clickSound) this.clickSound.play();
+        this.scene.start('Level2Scene', { 
+            lives: this.lives,
+            score: this.score,
+            calories: this.calories,
+            distance: this.distance
+        });
+    });
+}
+
 
     playHitFeedback() {
         if (navigator.vibrate) navigator.vibrate(200);
@@ -938,6 +1129,5 @@ export async function showLeaderboardUI() {
             repeat: 2,
             onComplete: () => this.runner.clearTint()
         });
-    
     }
-} 
+}
