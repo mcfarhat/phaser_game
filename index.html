@@ -152,11 +152,11 @@
         font-family: 'Luckiest Guy', cursive;
         color: #fff;
         border-radius: 12px;
-        width: 120px;
+        width: 140px;
         cursor: pointer;
         box-shadow: 0 4px 6px #00000033;
         transition: transform 0.2s ease;
-        letter-spacing: 1.2px;
+        letter-spacing: 2.4px;
         padding: 10px 7px;
       }
       #closePauseBtn {
@@ -214,14 +214,14 @@
     background-color: #59544C;
     border-radius: 30px;
     box-shadow: 0 8px 16px rgba(0,0,0,0.4);
-    padding: 20px 10px;
+    padding: 15px 10px;
     text-align: center;
     color: #EFEFEF;
     position: absolute;
     flex-direction: column;
     align-items: center;
     z-index: 1000;
-    top: 25%;
+    top: 18%;
     left: 50%;
     transform: translateX(-50%);
 ">
@@ -231,7 +231,7 @@
         background-color: #3f3c36;
         color: white;
         border-radius: 35px;
-        margin: 5px 0 20px 0;
+        margin: 5px 0 10px 0;
         font-size: 28px;
         padding: 7px 10px;
         letter-spacing: 1.2px;
@@ -244,13 +244,10 @@
         list-style: none;
         padding: 0;
         margin: 0;
-        width: 100%;
         overflow-y: auto;
-        max-height: 200px;
     "></ul>
 
     <button id="close-leaderboard" style="
-        margin-top: 25px;
         background-color: #7AAFBA;
         color: #333;
         font-size: 23px;
@@ -289,10 +286,6 @@
       window.addEventListener('load', () => {
       const closeBtn = document.getElementById('close-leaderboard');
       const leaderboardPanel = document.getElementById('leaderboard-container');
-
-      closeBtn.addEventListener('click', () => {
-        leaderboardPanel.style.display = 'none';
-      });
     });
 
     </script>

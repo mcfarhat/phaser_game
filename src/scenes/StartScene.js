@@ -1,5 +1,6 @@
 //StartScene.js
 import { supabase } from '../supabaseClient.js';
+import { fetchAndDisplayLeaderboard, showLeaderboardUI } from './GameScene.js';
 
 export default class StartScene extends Phaser.Scene {
     constructor() {
@@ -75,6 +76,30 @@ export default class StartScene extends Phaser.Scene {
             document.getElementById('musicSlider').value = this.registry.get('musicVolume') * 100;
             document.getElementById('soundSlider').value = this.registry.get('soundVolume') * 100;
         });
+
+        this.leaderboardIcon = this.add.image(width - 40, 5, 'trophy-icon')
+            .setDisplaySize(28, 28)
+            .setOrigin(1, 0)
+            .setInteractive({ useHandCursor: true });
+
+        this.leaderboardIcon.on('pointerdown', () => {
+            if (this.clickSound) this.clickSound.play();
+            this.scene.pause();
+            showLeaderboardUI();
+        });
+
+        const closeLeaderboardBtn = document.getElementById('close-leaderboard');
+        if (closeLeaderboardBtn && !closeLeaderboardBtn.hasListener) {
+            closeLeaderboardBtn.addEventListener('click', () => {
+                if (this.clickSound) this.clickSound.play();
+                document.getElementById('leaderboard-container').style.display = 'none';
+                document.querySelector('.overlay').style.display = 'none';
+                this.scene.resume();
+                closeLeaderboardBtn.hasListener = false;
+            });
+            closeLeaderboardBtn.hasListener = true;
+            
+        }
 
         // Sliders feedback sound
         const musicSlider = document.getElementById('musicSlider');
@@ -187,10 +212,6 @@ export default class StartScene extends Phaser.Scene {
             duration: 600
         });
 
-        this.input.keyboard.on('keydown-SPACE', () => {
-            this.scene.start('GameScene', { selectedCharacter: this.selectedCharacter });
-        });
-
         this.loadPlayerNameFromSupabase();
     }
 
@@ -238,8 +259,8 @@ export default class StartScene extends Phaser.Scene {
         this.namePanel.style.flexDirection = 'column';
         this.namePanel.style.alignItems = 'center';
         this.namePanel.style.justifyContent = 'center';
-        this.namePanel.style.padding = '20px';
-        this.namePanel.style.gap = '15px';
+        this.namePanel.style.padding = '40px 20px 20px 20px';
+        this.namePanel.style.gap = '10px';
         this.namePanel.style.zIndex = 1000;
         this.namePanel.style.width = '260px';
         this.namePanel.style.height = '130px';
@@ -252,24 +273,23 @@ export default class StartScene extends Phaser.Scene {
 
         // Prompt
         const prompt = document.createElement('p');
-        prompt.textContent = 'ENTER YOUR NAME:';
-        prompt.style.fontSize = '22px';
+        prompt.textContent = 'ENTER YOUR NICKNAME:';
+        prompt.style.fontSize = '20px';
         prompt.style.fontFamily = 'Luckiest Guy';
-        prompt.style.letterSpacing = '1.5px';
-        prompt.style.color = '#729C97';
+        prompt.style.color = '#7AAFBA';
         prompt.style.margin = '0';
 
         // Input field
-        const inputWidth = 200;
+        const inputWidth = 210;
         const inputHeight = 25;
 
         this.nameInputElement = document.createElement('input');
         this.nameInputElement.type = 'text';
-        this.nameInputElement.placeholder = 'YOUR NAME';
+        this.nameInputElement.placeholder = 'YOUR NICKNAME';
         this.nameInputElement.style.width = `${inputWidth}px`;
         this.nameInputElement.style.height = `${inputHeight}px`;
         this.nameInputElement.style.fontSize = '18px';
-        this.nameInputElement.style.color = '#729C97';
+        this.nameInputElement.style.color = '#7AAFBA';
         this.nameInputElement.style.padding = '8px 12px';
         this.nameInputElement.style.borderRadius = '8px';
         this.nameInputElement.style.boxShadow = '0 4px 10px rgba(0,0,0,0.25)';
@@ -280,17 +300,54 @@ export default class StartScene extends Phaser.Scene {
         const style = document.createElement('style');
         style.textContent = `
         .name-input::placeholder {
-            color: #729C97;
+            color:rgb(211, 239, 242);
             font-family: 'Luckiest Guy';
             font-size: 15px;
-            letter-spacing: 1.5px;
+            letter-spacing: 0.5px;
         }
         `;
         document.head.appendChild(style);
 
+        // GO button
+        const goButton = document.createElement('button');
+        goButton.textContent = 'GO';
+        goButton.style.backgroundColor = '#7AAFBA';
+        goButton.style.color = '#fff';
+        goButton.style.fontSize = '18px';
+        goButton.style.padding = '8px 24px';
+        goButton.style.border = 'none';
+        goButton.style.borderRadius = '30px';
+        goButton.style.cursor = 'pointer';
+        goButton.style.fontFamily = 'Luckiest Guy';
+        goButton.style.boxShadow = '0 4px 10px rgba(0,0,0,0.3)';
+        goButton.style.transition = 'transform 0.1s ease';
+        goButton.style.letterSpacing = '1px';
+        goButton.style.marginTop = '15px';
+
+        goButton.addEventListener('click', async () => {
+            const val = this.nameInputElement.value.trim();
+            if (val.length > 0) {
+                localStorage.setItem('playerName', val);
+                this.playerName = val;
+
+                const { data: userData, error: userError } = await supabase.auth.getUser();
+                if (userData?.user) {
+                    const userId = userData.user.id;
+                    await supabase
+                        .from('users')
+                        .upsert({ id: userId, name: val }, { onConflict: ['id'] });
+                }
+
+                this.removeNameInput();
+                this.displayWelcomeMessage(val);
+                this.startGame();
+            }
+        });
+
         // Add elements to panel
         this.namePanel.appendChild(prompt);
         this.namePanel.appendChild(this.nameInputElement);
+        this.namePanel.appendChild(goButton);
         document.body.appendChild(this.namePanel);
 
         // Focus input
@@ -378,11 +435,12 @@ export default class StartScene extends Phaser.Scene {
     displayWelcomeMessage(name) {
         this.add.text(10, 7, `WELCOME, ${name}!`, {
             fontFamily: 'Arial',
-            fontSize: '18px',
+            fontSize: '16px',
             fill: '#ffffff',
             fontStyle: 'bold',
             stroke: '#000000',
-            strokeThickness: 2
+            strokeThickness: 2,
+            letterSpacing: '1.2px'
         }).setDepth(10);
     }
 }

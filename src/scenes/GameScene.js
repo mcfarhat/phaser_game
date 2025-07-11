@@ -41,13 +41,13 @@ async function submitScore(player_name, score, calories) {
     }
 }
 
-async function fetchAndDisplayLeaderboard() {
+export async function fetchAndDisplayLeaderboard() {
   const leaderboardList = document.getElementById('leaderboard-list');
   leaderboardList.innerHTML = `
     <li style="
       text-align: center;
       font-family: 'Luckiest Guy', cursive;
-      font-size: 20px;
+      font-size: 17px;
     //   padding: 10px;
       color: #ccc;
     ">Loading...</li>
@@ -57,7 +57,8 @@ async function fetchAndDisplayLeaderboard() {
     .from('leaderboard')
     .select('*')
     .order('score', { ascending: false })
-    .order('calories', { ascending: false });
+    .order('calories', { ascending: false })
+    .limit(5);
 
   if (error) {
     leaderboardList.innerHTML = `
@@ -75,7 +76,7 @@ data.forEach(({ player_name, score, calories }, index) => {
   li.style.alignItems = 'center';
   li.style.justifyContent = 'start';
   li.style.margin = '20px 20px';
-  li.style.fontSize = '20px';
+  li.style.fontSize = '17px';
   li.style.fontFamily = "'Luckiest Guy', cursive";
   li.style.letterSpacing = '1.5px';
   li.style.gap = '20px';
@@ -92,14 +93,14 @@ data.forEach(({ player_name, score, calories }, index) => {
     </span>
 
     <span id="${wrapperId}" style="
-      padding: 2px 10px 2px 30px;
+      padding: 2px 20px 2px 40px;
       background-color: #fff;
       border-radius: 5px;
       color: #3f3c36;
       display: flex;
-      gap: 15px;
+      gap: 20px;
       align-items: center;
-      font-size: 20px;
+      font-size: 17px;
       position: relative;
     ">
       <img src="assets/icons/medals.svg" alt="medal" style="
@@ -110,8 +111,8 @@ data.forEach(({ player_name, score, calories }, index) => {
         top: 50%;
         transform: translateY(-50%);
       ">
-      <span>${score} pts</span>
-      <span>${calories} j</span>
+      <span>${score}</span>
+      <span>${calories}</span>
     </span>
   `;
 
@@ -121,9 +122,10 @@ data.forEach(({ player_name, score, calories }, index) => {
 
 }
 
-async function showLeaderboardUI() {
-  document.getElementById('leaderboard-container').style.display = 'flex';
-  await fetchAndDisplayLeaderboard();
+export async function showLeaderboardUI() {
+    document.getElementById('leaderboard-container').style.display = 'flex';
+    document.querySelector('.overlay').style.display = 'block';
+    await fetchAndDisplayLeaderboard();
 }
 
 
@@ -200,7 +202,7 @@ async function showLeaderboardUI() {
 
         this.scoreText = this.add.text(10, 7, 'SCORE: 0', 
         { 
-            fontSize: '17px', 
+            fontSize: '15px', 
             fill: '#fff', 
             fontFamily: 'Arial', 
             fontStyle: 'bold',
@@ -218,9 +220,9 @@ async function showLeaderboardUI() {
         }).setScrollFactor(0);
         this.scoreText.setResolution(3);
 
-        this.caloriesText = this.add.text(150, 7, 'CALORIES: 0', 
+        this.caloriesText = this.add.text(120, 7, 'CALORIES: 0', 
         { 
-            fontSize: '17px', 
+            fontSize: '15px', 
             fill: '#fff', 
             fontFamily: 'Arial', 
             fontStyle: 'bold',
@@ -238,9 +240,9 @@ async function showLeaderboardUI() {
         }).setScrollFactor(0);
         this.caloriesText.setResolution(3);
 
-        this.timerText = this.add.text(310, 7, 'Time: 0 s', 
+        this.timerText = this.add.text(270, 7, 'Time: 0 s', 
         { 
-            fontSize: '17px', 
+            fontSize: '15px', 
             fill: '#fff', 
             fontFamily: 'Arial', 
             fontStyle: 'bold',
@@ -257,9 +259,9 @@ async function showLeaderboardUI() {
         }).setScrollFactor(0);
         this.timerText.setResolution(3);
 
-        this.distanceText = this.add.text(420, 7, 'Distance: 0 m', 
+        this.distanceText = this.add.text(390, 7, 'Distance: 0 m', 
         { 
-            fontSize: '17px', 
+            fontSize: '15px', 
             fill: '#fff', 
             fontFamily: 'Arial', 
             fontStyle: 'bold',
@@ -279,7 +281,7 @@ async function showLeaderboardUI() {
         this.hearts = [];
 
         for (let i = 0; i < 3; i++) {
-            const heart = this.add.image(600 + i * 35, 17, 'heart') // adjust position as needed
+            const heart = this.add.image(570 + i * 34, 17, 'heart')
                 .setScale(0.040) // scale to fit nicely
                 .setScrollFactor(0); // fix to camera
 
@@ -319,7 +321,7 @@ async function showLeaderboardUI() {
         this.voiceEnabled = this.registry.get('soundEnabled');
 
         // Pause button
-        this.pauseButton = this.add.text(width - 37, 1, '⏸', {
+        this.pauseButton = this.add.text(width - 33, 1, '⏸', {
             fontSize: '27px',
             color: '#fff',
             fontFamily: 'Luckiest Guy',
@@ -370,7 +372,7 @@ async function showLeaderboardUI() {
             document.querySelector('.panel').style.display = 'flex';
 
             // Pause the game
-            this.togglePause(true);
+            this.scene.pause();
 
             // Set slider values strictly from registry (no fallback)
             const musicSlider = document.getElementById('musicSlider');
@@ -423,11 +425,34 @@ async function showLeaderboardUI() {
                 document.querySelector('.overlay').style.display = 'none';
                 document.querySelector('.panel').style.display = 'none';
 
-                this.togglePause(false);
-
+                this.scene.resume();
             });
             okButton.hasClickListener = true;
+
+            const closeLeaderboardBtn = document.getElementById('close-leaderboard');
+            if (closeLeaderboardBtn && !closeLeaderboardBtn.hasListener) {
+                closeLeaderboardBtn.addEventListener('click', () => {
+                    if (this.clickSound) this.clickSound.play();
+                    document.getElementById('leaderboard-container').style.display = 'none';
+                    document.querySelector('.overlay').style.display = 'none';
+                    this.scene.resume();
+                    closeLeaderboardBtn.hasListener = false;
+                });
+                closeLeaderboardBtn.hasListener = true;
+            }
         }
+
+        // Trophy
+        this.leaderboardIcon = this.add.image(width - 60, 5, 'trophy-icon')
+            .setDisplaySize(28, 28)
+            .setOrigin(1, 0)
+            .setInteractive({ useHandCursor: true });
+
+        this.leaderboardIcon.on('pointerdown', () => {
+            if (this.clickSound) this.clickSound.play();
+            this.scene.pause();
+            showLeaderboardUI();
+        });
 
         // Motivation text
         this.motivationTimer = this.time.addEvent({
@@ -610,8 +635,8 @@ async function showLeaderboardUI() {
         this.timerText.setText('TIME: ' + elapsed + ' s');
         const deltaSeconds = delta / 1000;
         this.distance += this.gameSpeed * deltaSeconds / 10;
-        this.caloriesText.setText('CALORIES: ' + this.calories + ' j');
-        this.scoreText.setText('SCORE: ' + this.score + ' pts');
+        this.caloriesText.setText('CALORIES: ' + this.calories );
+        this.scoreText.setText('SCORE: ' + this.score);
 
         this.distanceText.setText('DISTANCE: ' + Math.floor(this.distance) + ' m');
     }
@@ -829,7 +854,7 @@ async function showLeaderboardUI() {
             await submitScore(playerName, this.score, this.calories);
             await showLeaderboardUI();
         });
-
+        
         // Common button function
         const createButton = (label, x, y, callback) => {
             const btnWidth = 100;
@@ -901,7 +926,6 @@ async function showLeaderboardUI() {
                 this.scene.start('StartScene');
             });
     }
-
 
     playHitFeedback() {
         if (navigator.vibrate) navigator.vibrate(200);
