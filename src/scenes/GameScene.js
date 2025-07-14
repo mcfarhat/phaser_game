@@ -1,28 +1,24 @@
-import { PLAYER_CONFIGS, powerUpTypes, hazardTypes, obstacleTypes, LEVEL_CONFIGS } from '../config.js';
+import { LEVEL_CONFIGS,PLAYER_CONFIGS, powerUpTypes, hazardTypes, obstacleTypes } from '../config.js';
 
 export default class GameScene extends Phaser.Scene {
-    constructor() {
+  constructor() {
         super({ key: 'GameScene' });
+        this.gameSpeed = 4;
         this.lastSpawnedItemX = -Infinity;
         this.lastSpawnedItemY = -Infinity;
         this.minDistanceBetweenItems = 150;
         this.minYDistanceBetweenItems = 120; 
+        this.itemSpawnHeightRange = [150, 300];
         this.selectedVoice = null;
     }
 
     init(data) {
         this.selectedCharacter = data.selectedCharacter;
+        
         if (data.startTimer) {
             this.levelDuration = 5 * 60 * 1000; // 5 minutes
             this.shouldStartTimer = true;
         }
-
-        this.levelId = data.levelId || 1;
-        this.levelConfig = LEVEL_CONFIGS.find(l => l.id === this.levelId);
-
-        // ✅ Apply level difficulty parameters
-        this.gameSpeed = this.levelConfig.speed;
-        this.itemSpawnHeightRange = this.levelConfig.spawnRange;
     }
     
     preload() {}
@@ -31,6 +27,13 @@ export default class GameScene extends Phaser.Scene {
     create() {
         const { width, height } = this.sys.game.config;
         const config = PLAYER_CONFIGS.find(p => p.key === this.selectedCharacter);
+        this.levelKey = 'level1'; // You can later update this dynamically
+this.levelConfig = LEVEL_CONFIGS[this.levelKey];
+
+
+this.caloriesBurnedDistance = 0; // Track how far the player has moved in pixels
+
+
         this.isPaused = false;
         
         // Pause pannel
@@ -73,23 +76,6 @@ export default class GameScene extends Phaser.Scene {
         const bg = this.textures.get('background').getSourceImage();
         this.background.setScale(width / bg.width, height / bg.height);
 
-        // 1️⃣ HUD box parameters
-        const hudHeight = 40;        // total height of the stats bar
-        const hudPadding = 10;       // inner padding for text
-
-        // 2️⃣ Draw a semi-transparent rectangle across the top
-        const hudBg = this.add.rectangle(
-        0,          // x
-        0,          // y
-        width,      // full width of the game canvas
-        hudHeight,  // height of the bar
-        0x000000,   // black
-        0.4         // 40% opacity
-        )
-        .setOrigin(0, 0)
-        .setScrollFactor(0)
-        .setDepth(50);
-
         this.score = 0;
         this.calories = 0;
         this.lives = 3;
@@ -97,70 +83,87 @@ export default class GameScene extends Phaser.Scene {
         this.levelEnded = false;
         this.timerStarted = false;
 
-        const hudStyle = {
-        fontSize: '19px',
-        fill: '#fff',
-        fontFamily: 'Arial',
-        fontStyle: 'bold',
-        stroke: '#729C97',
-        strokeThickness: 1.5,
-        shadow: {
-            offsetX: 1, offsetY: 1, color: '#000', blur: 4, stroke: true, fill: true
-        }
-        };
+        this.scoreText = this.add.text(10, 7, 'SCORE: 0', 
+        { 
+            fontSize: '19px', 
+            fill: '#fff', 
+            fontFamily: 'Arial', 
+            fontStyle: 'bold',
 
-        // Score
-        this.scoreText = this.add.text(
-        hudPadding, hudPadding,
-        'SCORE: 0',
-        hudStyle
-        ).setScrollFactor(0).setDepth(51);
+            stroke: '#729C97',
+            strokeThickness: 1.5,
+            shadow: {
+                offsetX: 1,
+                offsetY: 1,
+                color: '#000',
+                blur: 4,
+                stroke: true,
+                fill: true
+            } 
+        }).setScrollFactor(0);
+        this.scoreText.setResolution(3);
 
-        // Calories
-        this.caloriesText = this.add.text(
-        hudPadding + 115, hudPadding,
-        'CALORIES: 0',
-        hudStyle
-        ).setScrollFactor(0).setDepth(51);
+        this.caloriesText = this.add.text(130, 7, 'CALORIES: 0', 
+        { 
+            fontSize: '19px', 
+            fill: '#fff', 
+            fontFamily: 'Arial', 
+            fontStyle: 'bold',
 
-        // Time Left
-        this.timeLeftText = this.add.text(
-        hudPadding + 285, hudPadding,
-        'TIME: 5:00',
-        hudStyle
-        ).setScrollFactor(0).setDepth(51);
+            stroke: '#729C97',
+            strokeThickness: 1.5,
+            shadow: {
+                offsetX: 1,
+                offsetY: 1,
+                color: '#000',
+                blur: 4,
+                stroke: true,
+                fill: true
+            } 
+        }).setScrollFactor(0);
+        this.caloriesText.setResolution(3);
 
-        // Distance
-        this.distanceText = this.add.text(
-        hudPadding + 400, hudPadding,
-        'DISTANCE: 0 m',
-        hudStyle
-        ).setScrollFactor(0).setDepth(51);   
-
-        this.levelText = this.add.text(
-        width / 2,                // center horizontally
-        hudHeight + hudPadding,   // just below the box
-        `LEVEL: ${this.levelId}`, // dynamic level number
-        {
-            fontSize: '20px',
-            fill: '#FFD700', // ← Gold color
-            fontFamily: 'Arial',
+        this.timeLeftText = this.add.text(300, 7, ' TIME: 5:00', { 
+            fontSize: '19px', 
+            fill: '#fff', 
+            fontFamily: 'Arial', 
             fontStyle: 'bold',
             stroke: '#729C97',
             strokeThickness: 1.5,
             shadow: {
-            offsetX: 1, offsetY: 1, color: '#000', blur: 4, stroke: true, fill: true
-            }
-        }
-        )
-        .setOrigin(0.5, 0)  // center-align horizontally, top-align vertically
-        .setScrollFactor(0)
-        .setDepth(51);
+                offsetX: 1,
+                offsetY: 1,
+                color: '#000',
+                blur: 2,
+                stroke: true,
+                fill: true
+            } 
+        }).setScrollFactor(0);  
+        this.timeLeftText.setResolution(3);
+
+        this.distanceText = this.add.text(410, 7, 'Distance: 0 m', 
+        { 
+            fontSize: '19px', 
+            fill: '#fff', 
+            fontFamily: 'Arial', 
+            fontStyle: 'bold',
+            stroke: '#729C97',
+            strokeThickness: 1.5,
+            shadow: {
+                offsetX: 1,
+                offsetY: 1,
+                color: '#000',
+                blur: 2,
+                stroke: true,
+                fill: true
+            } 
+        }).setScrollFactor(0);  
+        this.distanceText.setResolution(3);   
         
         this.hearts = [];
 
         for (let i = 0; i < 3; i++) {
-            const heart = this.add.image(600 + i * 35, 22, 'heart') // adjust position as needed
+            const heart = this.add.image(600 + i * 35, 17, 'heart') // adjust position as needed
                 .setScale(0.040) // scale to fit nicely
                 .setScrollFactor(0); // fix to camera
 
@@ -428,13 +431,13 @@ export default class GameScene extends Phaser.Scene {
 
         // Spawn events
         this.powerUpTimer = this.time.addEvent({
-            delay: this.levelConfig.powerUpFrequency,
+            delay: Phaser.Math.Between(2500, 4500),
             loop: true,
             callback: () => { if (!this.isPaused) this.spawnPowerUp(); }
         });
         
         this.hazardTimer = this.time.addEvent({
-            delay: this.levelConfig.hazardFrequency,
+            delay: Phaser.Math.Between(2000, 4000),
             loop: true,
             callback: () => { if (!this.isPaused) this.spawnHazard(); }
         });
@@ -444,7 +447,7 @@ export default class GameScene extends Phaser.Scene {
         });
 
         this.time.addEvent({
-            delay: this.levelConfig.obstacleFrequency,
+            delay: Phaser.Math.Between(2500, 5000),
             callback: this.spawnObstacle,
             callbackScope: this,
             loop: true
@@ -487,12 +490,18 @@ export default class GameScene extends Phaser.Scene {
             this.runner.setVelocityX(0);
         }
 
-        if (Phaser.Input.Keyboard.JustDown(this.spacebar)) {
-            if (this.jumpCount < 2) {
-                this.runner.setVelocityY(-jumpHeight);
-                this.jumpCount++;
-            }
-        }
+       if (Phaser.Input.Keyboard.JustDown(this.spacebar)) {
+    if (this.jumpCount < 2) {
+        this.runner.setVelocityY(-jumpHeight);
+        this.jumpCount++;
+
+        // 🔻 Burn calories per jump (allow negatives)
+        const jumpBurn = this.levelConfig.calorieBurnPerJump || 0;
+        this.calories -= jumpBurn;
+        this.caloriesText.setText('CALORIES: ' + this.calories.toFixed(2));
+    }
+}
+
 
 
         // ✅ Cleanup
@@ -505,10 +514,25 @@ export default class GameScene extends Phaser.Scene {
 
         const deltaSeconds = delta / 1000;
         this.distance += this.gameSpeed * deltaSeconds / 10;
-        this.caloriesText.setText('CALORIES: ' + this.calories);
+        // Track calories based on distance
+// Update distance tracked for calorie burn
+this.caloriesBurnedDistance += this.gameSpeed * deltaSeconds / 10;
+
+// Burn calories every full 1 meter
+const burnPerMeter = this.levelConfig.calorieBurnPerMeter || 0;
+while (this.caloriesBurnedDistance >= 1) {
+    this.calories -= burnPerMeter;
+    this.caloriesBurnedDistance -= 1;
+}
+this.caloriesText.setText('CALORIES: ' + Math.floor(this.calories));
+
+
+
+
         this.scoreText.setText('SCORE: ' + this.score);
 
-        this.distanceText.setText('DISTANCE: ' + Math.floor(this.distance) + ' m');
+        this.distanceText.setText('DISTANCE: ' + this.distance.toFixed(2));
+
         if (this.timerStarted) {
             const timeLeft = Math.max(0, this.levelEndTime - time);
             const minutes = Math.floor(timeLeft / 60000);
@@ -833,23 +857,16 @@ export default class GameScene extends Phaser.Scene {
         .setDepth(100);
     
     // Pulsing Title Animation
-    const levelNum = this.levelId || 1;
-    const levelCompleteText = this.add.text(
-        width / 2,
-        height * 0.2,
-        `LEVEL ${levelNum} COMPLETED!`,    
-        {
+    const levelCompleteText = this.add.text(width / 2, height * 0.2, 'LEVEL COMPLETE!', {
         fontSize: '48px',
         fill: '#7FFF00',
         fontFamily: 'Luckiest Guy',
         stroke: '#729C97',
         strokeThickness: 6,
         align: 'center'
-        }
-    )
-    .setOrigin(0.5)
-    .setDepth(101)
-    .setResolution(3);
+    }).setOrigin(0.5)
+     .setDepth(101)
+     .setResolution(3);
 
     this.tweens.add({
         targets: levelCompleteText,
@@ -923,7 +940,7 @@ export default class GameScene extends Phaser.Scene {
     emitter.depth = 99;
 
     // Improved Button with Rounded Corners and Simple Hover Effect
-    const nextLevelButton = this.add.text(width / 2, height * 0.8, 'Next LEVEL', {
+    const nextLevelButton = this.add.text(width / 2, height * 0.8, 'LEVEL 2', {
         fontSize: '32px',
         fill: '#FFFFFF',
         fontFamily: 'Luckiest Guy',
@@ -967,16 +984,13 @@ export default class GameScene extends Phaser.Scene {
 
     nextLevelButton.on('pointerdown', () => {
         if (this.clickSound) this.clickSound.play();
-
-        const nextLevelId = (this.levelId || 1) + 1;
-
-        this.scene.start('GameScene', {
-            selectedCharacter: this.selectedCharacter,
-            levelId: nextLevelId,
-            startTimer: true
+        this.scene.start('Level2Scene', { 
+            lives: this.lives,
+            score: this.score,
+            calories: this.calories,
+            distance: this.distance
         });
     });
-
 }
 
 

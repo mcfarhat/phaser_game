@@ -7,6 +7,8 @@ export default class StartScene extends Phaser.Scene {
     init(data) {
     // store it so you can use it in create() or pass onwards
     this.selectedCharacter = data.selectedCharacter;
+    const levelKey = 'level1';
+
     }
 
     preload() {}
@@ -167,12 +169,13 @@ export default class StartScene extends Phaser.Scene {
         });
 
         startButton.on('pointerdown', () => {
-            playClickSound();
-            this.scene.start('GameScene', {
-                 selectedCharacter: this.selectedCharacter,
-                 levelId: 1,
-                 startTimer: true});
-        });
+    playClickSound();
+    this.scene.start('GameScene', {
+        selectedCharacter: this.selectedCharacter,
+        startTimer: true
+    });
+});
+
 
         this.tweens.add({
             targets: startButton,
@@ -184,12 +187,13 @@ export default class StartScene extends Phaser.Scene {
             duration: 600
         });
 
-        this.input.keyboard.on('keydown-SPACE', () => {
-            this.scene.start('GameScene', {
-                 selectedCharacter: this.selectedCharacter,
-                 levelId: 1,
-                 startTimer: true });
-        });
+       this.input.keyboard.on('keydown-SPACE', () => {
+    this.scene.start('GameScene', {
+        selectedCharacter: this.selectedCharacter,
+        startTimer: true
+    });
+});
+
     }
 
     createTitleText() {
