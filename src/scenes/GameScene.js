@@ -1,23 +1,28 @@
-import { PLAYER_CONFIGS, powerUpTypes, hazardTypes, obstacleTypes } from '../config.js';
+import { PLAYER_CONFIGS, powerUpTypes, hazardTypes, obstacleTypes, LEVEL_CONFIGS } from '../config.js';
 
 export default class GameScene extends Phaser.Scene {
     constructor() {
         super({ key: 'GameScene' });
-        this.gameSpeed = 4;
         this.lastSpawnedItemX = -Infinity;
         this.lastSpawnedItemY = -Infinity;
         this.minDistanceBetweenItems = 150;
         this.minYDistanceBetweenItems = 120; 
-        this.itemSpawnHeightRange = [150, 300];
         this.selectedVoice = null;
     }
 
     init(data) {
         this.selectedCharacter = data.selectedCharacter;
         if (data.startTimer) {
-            this.levelDuration = 5 * 60 * 1000; // 5 minutes
+            this.levelDuration = 5 * 4 * 1000; // 5 minutes
             this.shouldStartTimer = true;
         }
+
+        this.levelId = data.levelId || 1;
+        this.levelConfig = LEVEL_CONFIGS.find(l => l.id === this.levelId);
+
+        // ✅ Apply level difficulty parameters
+        this.gameSpeed = this.levelConfig.speed;
+        this.itemSpawnHeightRange = this.levelConfig.spawnRange;
     }
     
     preload() {}
@@ -423,13 +428,13 @@ export default class GameScene extends Phaser.Scene {
 
         // Spawn events
         this.powerUpTimer = this.time.addEvent({
-            delay: Phaser.Math.Between(2500, 4500),
+            delay: this.levelConfig.powerUpFrequency,
             loop: true,
             callback: () => { if (!this.isPaused) this.spawnPowerUp(); }
         });
         
         this.hazardTimer = this.time.addEvent({
-            delay: Phaser.Math.Between(2000, 4000),
+            delay: this.levelConfig.hazardFrequency,
             loop: true,
             callback: () => { if (!this.isPaused) this.spawnHazard(); }
         });
@@ -439,7 +444,7 @@ export default class GameScene extends Phaser.Scene {
         });
 
         this.time.addEvent({
-            delay: Phaser.Math.Between(2500, 5000),
+            delay: this.levelConfig.obstacleFrequency,
             callback: this.spawnObstacle,
             callbackScope: this,
             loop: true
@@ -911,7 +916,7 @@ export default class GameScene extends Phaser.Scene {
     emitter.depth = 99;
 
     // Improved Button with Rounded Corners and Simple Hover Effect
-    const nextLevelButton = this.add.text(width / 2, height * 0.8, 'LEVEL 2', {
+    const nextLevelButton = this.add.text(width / 2, height * 0.8, 'Next LEVEL', {
         fontSize: '32px',
         fill: '#FFFFFF',
         fontFamily: 'Luckiest Guy',
@@ -955,13 +960,16 @@ export default class GameScene extends Phaser.Scene {
 
     nextLevelButton.on('pointerdown', () => {
         if (this.clickSound) this.clickSound.play();
-        this.scene.start('Level2Scene', { 
-            lives: this.lives,
-            score: this.score,
-            calories: this.calories,
-            distance: this.distance
+
+        const nextLevelId = (this.levelId || 1) + 1;
+
+        this.scene.start('GameScene', {
+            selectedCharacter: this.selectedCharacter,
+            levelId: nextLevelId,
+            startTimer: true
         });
     });
+
 }
 
 
