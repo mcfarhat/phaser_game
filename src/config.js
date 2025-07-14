@@ -104,15 +104,23 @@ export const LEVEL_CONFIGS = {
   level1: {
     calorieBurnPerSecond: 1.0,
     calorieBurnPerJump: 5,
-    calorieBurnPerMeter: 2
-  
+    calorieBurnPerMeter: 2,
+    startingSpeed: 4,           // starting game speed for level 1
+    maxSpeed: 11,                  // max speed for level 1
+    speedIncrement: 0.5,        // amount to increase speed at each interval
+    speedIncreaseInterval: 5000 // interval in milliseconds (5 seconds) to increase speed
   },
   level2: {
     calorieBurnPerSecond: 2.0,
     calorieBurnPerJump: 8,
-    calorieBurnPerMeter: 3
+    calorieBurnPerMeter: 3,
+    startingSpeed: 6,
+    maxSpeed: 16,
+    speedIncrement: 0.7,
+    speedIncreaseInterval: 3000
   }
 };
+
 
 
 

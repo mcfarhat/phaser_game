@@ -27,11 +27,24 @@ export default class GameScene extends Phaser.Scene {
     create() {
         const { width, height } = this.sys.game.config;
         const config = PLAYER_CONFIGS.find(p => p.key === this.selectedCharacter);
-        this.levelKey = 'level1'; // You can later update this dynamically
+        this.levelKey = 'level1'; //  later can be updated dynamically
 this.levelConfig = LEVEL_CONFIGS[this.levelKey];
 
 
 this.caloriesBurnedDistance = 0; // Track how far the player has moved in pixels
+this.gameSpeed = this.levelConfig.startingSpeed;
+
+// Timer event to increase game speed periodically up to maxSpeed
+this.speedIncreaseTimer = this.time.addEvent({
+  delay: this.levelConfig.speedIncreaseInterval,
+  loop: true,
+  callback: () => {
+    if (!this.isPaused && this.gameSpeed < this.levelConfig.maxSpeed) {
+      this.gameSpeed = Math.min(this.gameSpeed + this.levelConfig.speedIncrement, this.levelConfig.maxSpeed);
+    }
+  }
+});
+
 
 
         this.isPaused = false;
@@ -514,8 +527,7 @@ this.caloriesBurnedDistance = 0; // Track how far the player has moved in pixels
 
         const deltaSeconds = delta / 1000;
         this.distance += this.gameSpeed * deltaSeconds / 10;
-        // Track calories based on distance
-// Update distance tracked for calorie burn
+        
 this.caloriesBurnedDistance += this.gameSpeed * deltaSeconds / 10;
 
 // Burn calories every full 1 meter
