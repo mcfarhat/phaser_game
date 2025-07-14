@@ -234,7 +234,6 @@ export const LEVEL_CONFIGS = [
     obstacleFrequency: 5000,
     spawnRange: [150, 300],
     label: 'Level 1',
-    difficulty: 'Very Easy'
   },
   {
     id: 2,
@@ -244,7 +243,6 @@ export const LEVEL_CONFIGS = [
     obstacleFrequency: 4800,
     spawnRange: [150, 290],
     label: 'Level 2',
-    difficulty: 'Easy'
   },
   {
     id: 3,
@@ -254,7 +252,6 @@ export const LEVEL_CONFIGS = [
     obstacleFrequency: 4600,
     spawnRange: [150, 280],
     label: 'Level 3',
-    difficulty: 'Easy-Medium'
   },
   {
     id: 4,
@@ -264,7 +261,6 @@ export const LEVEL_CONFIGS = [
     obstacleFrequency: 4400,
     spawnRange: [145, 270],
     label: 'Level 4',
-    difficulty: 'Medium'
   },
   {
     id: 5,
@@ -274,7 +270,6 @@ export const LEVEL_CONFIGS = [
     obstacleFrequency: 4200,
     spawnRange: [145, 260],
     label: 'Level 5',
-    difficulty: 'Medium'
   },
   {
     id: 6,
@@ -284,7 +279,6 @@ export const LEVEL_CONFIGS = [
     obstacleFrequency: 4000,
     spawnRange: [140, 250],
     label: 'Level 6',
-    difficulty: 'Medium-Hard'
   },
   {
     id: 7,
@@ -294,7 +288,6 @@ export const LEVEL_CONFIGS = [
     obstacleFrequency: 3800,
     spawnRange: [135, 240],
     label: 'Level 7',
-    difficulty: 'Hard'
   },
   {
     id: 8,
@@ -304,7 +297,6 @@ export const LEVEL_CONFIGS = [
     obstacleFrequency: 3600,
     spawnRange: [130, 230],
     label: 'Level 8',
-    difficulty: 'Hard'
   },
   {
     id: 9,
@@ -314,7 +306,6 @@ export const LEVEL_CONFIGS = [
     obstacleFrequency: 3400,
     spawnRange: [125, 220],
     label: 'Level 9',
-    difficulty: 'Very Hard'
   },
   {
     id: 10,
@@ -324,6 +315,5 @@ export const LEVEL_CONFIGS = [
     obstacleFrequency: 3200,
     spawnRange: [120, 210],
     label: 'Level 10',
-    difficulty: 'Extreme'
   }
 ];
