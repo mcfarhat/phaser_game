@@ -53,12 +53,11 @@ export default class StartScene extends Phaser.Scene {
 
         // SETTINGS BUTTON
         const settingsBtn = this.add.image(width - 10, 5, 'settings-icon')
-            .setDisplaySize(25, 25)
+            .setDisplaySize(25, 23)
             .setOrigin(1, 0)
-            .setInteractive({ useHandCursor: true });
-
-        settingsBtn.setDepth(10);
-        settingsBtn.setScrollFactor(0);
+            .setInteractive({ useHandCursor: true })
+            .setScrollFactor(0)
+            .setDepth(60);  
 
         settingsBtn.on('pointerdown', () => {
             playClickSound();
@@ -69,10 +68,12 @@ export default class StartScene extends Phaser.Scene {
             document.getElementById('soundSlider').value = this.registry.get('soundVolume') * 100;
         });
 
-        this.leaderboardIcon = this.add.image(width - 39, 5, 'trophy-icon')
-            .setDisplaySize(25, 25)
+        this.leaderboardIcon = this.add.image(width - 39, 6, 'trophy-icon')
+            .setDisplaySize(25, 23)
             .setOrigin(1, 0)
-            .setInteractive({ useHandCursor: true });
+            .setInteractive({ useHandCursor: true })
+            .setScrollFactor(0)
+            .setDepth(60);
 
         this.leaderboardIcon.on('pointerdown', () => {
             if (this.clickSound) this.clickSound.play();
@@ -208,6 +209,20 @@ export default class StartScene extends Phaser.Scene {
         });
 
         this.loadPlayerNameFromSupabase();
+
+        const hudHeight = 40;     
+        const hudPadding = 10;  
+        const hudBg = this.add.rectangle(
+            0,             
+            0,            
+            width,         
+            hudHeight,     
+            0x000000,     
+            0.4            
+        )
+        .setOrigin(0, 0)
+        .setScrollFactor(0)
+        .setDepth(50);
     }
 
     createTitleText() {
@@ -432,6 +447,6 @@ export default class StartScene extends Phaser.Scene {
             fontSize: '20px',
             fill: '#ffffff',
             letterSpacing: '1.2px'
-        }).setDepth(10);
+        }).setDepth(10).setScrollFactor(0).setDepth(60);
     }
 }

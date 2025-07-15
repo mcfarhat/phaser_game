@@ -289,8 +289,8 @@ export default class GameScene extends Phaser.Scene {
         }
 
         // Pause button
-        this.pauseButton = this.add.image(width - 40, 5, 'pause-icon')
-            .setDisplaySize(25, 25)
+        this.pauseButton = this.add.image(width - 40, 2, 'pause-icon')
+            .setDisplaySize(16, 31)
             .setOrigin(1, 0)
             .setInteractive({ useHandCursor: true });
 
@@ -305,8 +305,8 @@ export default class GameScene extends Phaser.Scene {
         });
 
         // SETTINGS button
-        const settingsBtn = this.add.image(width - 10, 5, 'settings-icon')
-            .setDisplaySize(25, 25)
+        const settingsBtn = this.add.image(width - 10, 6, 'settings-icon')
+            .setDisplaySize(25, 23)
             .setOrigin(1, 0)
             .setInteractive({ useHandCursor: true });
 
@@ -402,8 +402,8 @@ export default class GameScene extends Phaser.Scene {
         }
 
         // Trophy
-        this.leaderboardIcon = this.add.image(width - 70, 5, 'trophy-icon')
-            .setDisplaySize(25, 25)
+        this.leaderboardIcon = this.add.image(width - 63, 6, 'trophy-icon')
+            .setDisplaySize(25, 23)
             .setOrigin(1, 0)
             .setInteractive({ useHandCursor: true })
             .setDepth(60);
