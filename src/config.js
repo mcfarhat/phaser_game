@@ -229,6 +229,7 @@ export const LEVEL_CONFIGS = [
   {
     id: 1,
     speed: 4,
+    duration: 180000,  // 3:00
     powerUpFrequency: 3500,
     hazardFrequency: 4000,
     obstacleFrequency: 5000,
@@ -237,7 +238,8 @@ export const LEVEL_CONFIGS = [
   },
   {
     id: 2,
-    speed: 4.2,
+    speed: 4.75,
+    duration: 210000,  // 3:30
     powerUpFrequency: 3300,
     hazardFrequency: 3800,
     obstacleFrequency: 4800,
@@ -246,7 +248,8 @@ export const LEVEL_CONFIGS = [
   },
   {
     id: 3,
-    speed: 4.4,
+    speed: 5.5,
+    duration: 240000,  // 4:00
     powerUpFrequency: 3100,
     hazardFrequency: 3600,
     obstacleFrequency: 4600,
@@ -255,7 +258,8 @@ export const LEVEL_CONFIGS = [
   },
   {
     id: 4,
-    speed: 4.6,
+    speed: 6.25,
+    duration: 270000,  // 4:30
     powerUpFrequency: 3000,
     hazardFrequency: 3400,
     obstacleFrequency: 4400,
@@ -264,7 +268,8 @@ export const LEVEL_CONFIGS = [
   },
   {
     id: 5,
-    speed: 4.8,
+    speed: 7,
+    duration: 300000,  // 5:00
     powerUpFrequency: 2900,
     hazardFrequency: 3200,
     obstacleFrequency: 4200,
@@ -273,7 +278,8 @@ export const LEVEL_CONFIGS = [
   },
   {
     id: 6,
-    speed: 5,
+    speed: 7.75,
+    duration: 330000,  // 5:30
     powerUpFrequency: 2800,
     hazardFrequency: 3000,
     obstacleFrequency: 4000,
@@ -282,7 +288,8 @@ export const LEVEL_CONFIGS = [
   },
   {
     id: 7,
-    speed: 5.2,
+    speed: 8.5,
+    duration: 360000,  // 6:00
     powerUpFrequency: 2700,
     hazardFrequency: 2800,
     obstacleFrequency: 3800,
@@ -291,7 +298,8 @@ export const LEVEL_CONFIGS = [
   },
   {
     id: 8,
-    speed: 5.5,
+    speed: 9.25,
+    duration: 390000,  // 6:30
     powerUpFrequency: 2600,
     hazardFrequency: 2600,
     obstacleFrequency: 3600,
@@ -300,7 +308,8 @@ export const LEVEL_CONFIGS = [
   },
   {
     id: 9,
-    speed: 5.8,
+    speed: 10,
+    duration: 420000,  // 7:00
     powerUpFrequency: 2500,
     hazardFrequency: 2400,
     obstacleFrequency: 3400,
@@ -309,7 +318,8 @@ export const LEVEL_CONFIGS = [
   },
   {
     id: 10,
-    speed: 6,
+    speed: 10.75,
+    duration: 450000,  // 7:30
     powerUpFrequency: 2400,
     hazardFrequency: 2200,
     obstacleFrequency: 3200,
