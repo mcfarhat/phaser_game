@@ -22,6 +22,12 @@ export default class GameScene extends Phaser.Scene {
 
         this.gameSpeed = this.levelConfig.speed;
         this.itemSpawnHeightRange = this.levelConfig.spawnRange;
+
+        this.score = this.registry.get('score') ?? 0;
+        this.calories = this.registry.get('calories') ?? 0;
+        this.distance = this.registry.get('distance') ?? 0;
+        this.lives = this.registry.get('lives') ?? 3;
+
     }
 
     
@@ -52,7 +58,19 @@ export default class GameScene extends Phaser.Scene {
             restartBtn.addEventListener('click', () => {
                 if (this.clickSound) this.clickSound.play();
                 pauseOverlay.style.display = 'none';
-                this.scene.restart();
+                // 🔄 Reset all stats
+                this.registry.set('score', 0);
+                this.registry.set('calories', 0);
+                this.registry.set('distance', 0);
+                this.registry.set('lives', 3);
+
+                // 🏁 Start fresh from Level 1
+                this.scene.stop();
+                this.scene.start('GameScene', {
+                    selectedCharacter: this.selectedCharacter,
+                    levelId: 1,
+                    startTimer: true
+                });
             });
             restartBtn.hasClickListener = true;
         }
@@ -61,6 +79,10 @@ export default class GameScene extends Phaser.Scene {
             homeBtn.addEventListener('click', () => {
                 if (this.clickSound) this.clickSound.play();
                 pauseOverlay.style.display = 'none';
+                this.registry.set('score', 0);
+                this.registry.set('calories', 0);
+                this.registry.set('distance', 0);
+                this.registry.set('lives', 3);
                 this.scene.stop();
                 this.scene.start('StartScene');
             });
@@ -90,10 +112,6 @@ export default class GameScene extends Phaser.Scene {
         .setScrollFactor(0)
         .setDepth(50);
 
-        this.score = 0;
-        this.calories = 0;
-        this.lives = 3;
-        this.distance = 0;
         this.levelEnded = false;
         this.timerStarted = false;
 
@@ -159,7 +177,7 @@ export default class GameScene extends Phaser.Scene {
         
         this.hearts = [];
 
-        for (let i = 0; i < 3; i++) {
+        for (let i = 0; i < this.lives; i++) {
             const heart = this.add.image(600 + i * 35, 22, 'heart') // adjust position as needed
                 .setScale(0.040) // scale to fit nicely
                 .setScrollFactor(0); // fix to camera
@@ -802,11 +820,30 @@ export default class GameScene extends Phaser.Scene {
 
         // Restart Button
         createButton('RESTART', width / 2 - 70, height * 0.55, () => {
-            this.scene.restart();
+            if (this.clickSound) this.clickSound.play();
+
+            // 🔄 Reset all stats
+            this.registry.set('score', 0);
+            this.registry.set('calories', 0);
+            this.registry.set('distance', 0);
+            this.registry.set('lives', 3);
+
+            // 🏁 Start fresh from Level 1
+            this.scene.stop();
+            this.scene.start('GameScene', {
+                selectedCharacter: this.selectedCharacter,
+                levelId: 1,
+                startTimer: true
+            });
         });
+
 
         // Home Button
         createButton('HOME', width / 2 + 70, height * 0.55, () => {
+            this.registry.set('score', 0);
+            this.registry.set('calories', 0);
+            this.registry.set('distance', 0);
+            this.registry.set('lives', 3);
             this.scene.stop();
             this.scene.start('StartScene');
         });
@@ -945,6 +982,13 @@ export default class GameScene extends Phaser.Scene {
         delay: 1500,
         ease: 'Elastic'
     });
+
+    //store the player's stats in the registry
+    this.registry.set('score', this.score);
+    this.registry.set('calories', this.calories);
+    this.registry.set('distance', this.distance);
+    this.registry.set('lives', this.lives);
+
 
     // Simple hover effect - just scales up
     nextLevelButton.on('pointerover', () => {
