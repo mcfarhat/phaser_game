@@ -68,7 +68,7 @@ export default class GameScene extends Phaser.Scene {
                 this.scene.stop();
                 this.scene.start('GameScene', {
                     selectedCharacter: this.selectedCharacter,
-                    levelId: 1,
+                    levelId: this.levelId,
                     startTimer: true
                 });
             });
@@ -832,7 +832,7 @@ export default class GameScene extends Phaser.Scene {
             this.scene.stop();
             this.scene.start('GameScene', {
                 selectedCharacter: this.selectedCharacter,
-                levelId: 1,
+                levelId: this.levelId,
                 startTimer: true
             });
         });
