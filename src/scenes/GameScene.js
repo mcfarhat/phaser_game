@@ -12,18 +12,18 @@ export default class GameScene extends Phaser.Scene {
 
     init(data) {
         this.selectedCharacter = data.selectedCharacter;
+        this.levelId = data.levelId || 1; // ✅ Move this up first
+        this.levelConfig = LEVEL_CONFIGS.find(l => l.id === this.levelId); // now safe
+
         if (data.startTimer) {
-            this.levelDuration = 5 * 60 * 1000; // 5 minutes
+            this.levelDuration = this.levelConfig.duration;
             this.shouldStartTimer = true;
         }
 
-        this.levelId = data.levelId || 1;
-        this.levelConfig = LEVEL_CONFIGS.find(l => l.id === this.levelId);
-
-        // ✅ Apply level difficulty parameters
         this.gameSpeed = this.levelConfig.speed;
         this.itemSpawnHeightRange = this.levelConfig.spawnRange;
     }
+
     
     preload() {}
 
