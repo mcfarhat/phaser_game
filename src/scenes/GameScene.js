@@ -19,15 +19,17 @@ export default class GameScene extends Phaser.Scene {
             this.levelDuration = this.levelConfig.duration;
             this.shouldStartTimer = true;
         }
-
+        
         this.gameSpeed = this.levelConfig.speed;
         this.itemSpawnHeightRange = this.levelConfig.spawnRange;
-
+        
         this.score = this.registry.get('score') ?? 0;
         this.calories = this.registry.get('calories') ?? 0;
         this.distance = this.registry.get('distance') ?? 0;
         this.lives = this.registry.get('lives') ?? 3;
-
+        
+        this.elapsedTime = 0;           // Tracks gameplay time
+        this.timerStarted = false;     // Starts true when actual timer begins
     }
 
     
@@ -59,10 +61,7 @@ export default class GameScene extends Phaser.Scene {
                 if (this.clickSound) this.clickSound.play();
                 pauseOverlay.style.display = 'none';
                 // 🔄 Reset all stats
-                this.registry.set('score', 0);
-                this.registry.set('calories', 0);
-                this.registry.set('distance', 0);
-                this.registry.set('lives', 3);
+                this.resetStats();
 
                 // 🏁 Start fresh from Level 1
                 this.scene.stop();
@@ -79,10 +78,7 @@ export default class GameScene extends Phaser.Scene {
             homeBtn.addEventListener('click', () => {
                 if (this.clickSound) this.clickSound.play();
                 pauseOverlay.style.display = 'none';
-                this.registry.set('score', 0);
-                this.registry.set('calories', 0);
-                this.registry.set('distance', 0);
-                this.registry.set('lives', 3);
+                this.resetStats();
                 this.scene.stop();
                 this.scene.start('StartScene');
             });
@@ -479,11 +475,27 @@ export default class GameScene extends Phaser.Scene {
             this.startTimer();
         }
 
-        // Only check level completion if timer is running
-        if (this.timerStarted && time > this.levelEndTime && !this.levelEnded) {
+        // New countdown logic—only ticks when unpaused
+        if (this.timerStarted && !this.isPaused) {
+            this.elapsedTime += delta;
+
+            // compute remaining time
+            const timeLeft = Math.max(this.levelDuration - this.elapsedTime, 0);
+            const mins = Math.floor(timeLeft / 60000);
+            const secs = Math.floor((timeLeft % 60000) / 1000)
+            .toString().padStart(2, '0');
+
+            // update the HUD
+            this.timeLeftText.setText(`TIME: ${mins}:${secs}`);
+
+            // end the level when clock hits zero
+            if (timeLeft === 0 && !this.levelEnded) {
+            this.levelEnded = true;
             this.levelCompleted();
             return;
+            }
         }
+
 
 
         if (this.isPaused) return;
@@ -527,20 +539,11 @@ export default class GameScene extends Phaser.Scene {
         this.scoreText.setText('SCORE: ' + this.score);
 
         this.distanceText.setText('DISTANCE: ' + Math.floor(this.distance) + ' m');
-        if (this.timerStarted) {
-            const timeLeft = Math.max(0, this.levelEndTime - time);
-            const minutes = Math.floor(timeLeft / 60000);
-            const seconds = Math.floor((timeLeft % 60000) / 1000);
-            this.timeLeftText.setText(`TIME: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`);
-        } else {
-            this.timeLeftText.setText(`TIME: 5:00`);
-        }
+        
 
     }
 
     startTimer() {
-        this.startTime = this.time.now;
-        this.levelEndTime = this.startTime + this.levelDuration;
         this.timerStarted = true; // Mark timer as started
     }
 
@@ -823,10 +826,7 @@ export default class GameScene extends Phaser.Scene {
             if (this.clickSound) this.clickSound.play();
 
             // 🔄 Reset all stats
-            this.registry.set('score', 0);
-            this.registry.set('calories', 0);
-            this.registry.set('distance', 0);
-            this.registry.set('lives', 3);
+            this.resetStats();
 
             // 🏁 Start fresh from Level 1
             this.scene.stop();
@@ -840,10 +840,7 @@ export default class GameScene extends Phaser.Scene {
 
         // Home Button
         createButton('HOME', width / 2 + 70, height * 0.55, () => {
-            this.registry.set('score', 0);
-            this.registry.set('calories', 0);
-            this.registry.set('distance', 0);
-            this.registry.set('lives', 3);
+            this.resetStats();
             this.scene.stop();
             this.scene.start('StartScene');
         });
@@ -1035,5 +1032,12 @@ export default class GameScene extends Phaser.Scene {
             repeat: 2,
             onComplete: () => this.runner.clearTint()
         });
+    }
+
+    resetStats(){
+        this.registry.set('score', 0);
+        this.registry.set('calories', 0);
+        this.registry.set('distance', 0);
+        this.registry.set('lives', 3);
     }
 }
