@@ -43,16 +43,32 @@ async function submitScore(player_name, score, calories) {
 
 export async function fetchAndDisplayLeaderboard() {
     const leaderboardList = document.getElementById('leaderboard-list');
-    leaderboardList.innerHTML = `
-        <li style="
-        text-align: center;
-        font-family: 'Luckiest Guy', cursive;
-        font-size: 17px;
-        //   padding: 10px;
-        color: #ccc;
-        ">Loading...</li>
+    leaderboardList.innerHTML = ''; // Clear any existing content
+
+    // Header Row (as a div)
+    const headerRow = document.createElement('div');
+    headerRow.style.display = 'flex';
+    headerRow.style.flexDirection = 'row';
+    headerRow.style.justifyContent = 'space-between';
+    headerRow.style.alignItems = 'center';
+    headerRow.style.gap = '20px';
+    headerRow.style.padding = '8px 20px';
+    headerRow.style.fontSize = '17px';
+    headerRow.style.letterSpacing = '1.2px';
+    headerRow.style.color = '#FFF';
+    headerRow.style.borderBottom = '2px solid #EFEFEF';
+    headerRow.style.marginBottom = '8px';
+    headerRow.style.fontFamily = "'Luckiest Guy', cursive";
+
+    headerRow.innerHTML = `
+        <span style="flex: 2; text-align: left;">NICKNAME</span>
+        <span style="flex: 1; text-align: right;">SCORE</span>
+        <span style="flex: 1; text-align: right;">CALORIES</span>
     `;
 
+    leaderboardList.appendChild(headerRow);
+
+    // Fetch leaderboard data
     const { data, error } = await supabase
         .from('leaderboard')
         .select('*')
@@ -61,62 +77,38 @@ export async function fetchAndDisplayLeaderboard() {
         .limit(5);
 
     if (error) {
-        leaderboardList.innerHTML = `
-        <li style="color: white; font-size: 20px;">Failed to load leaderboard</li>
-        `;
         console.error('Error fetching leaderboard:', error.message);
         return;
     }
 
-    leaderboardList.innerHTML = '';
-
     data.forEach(({ player_name, score, calories }, index) => {
-    const li = document.createElement('li');
-    li.style.display = 'flex';
-    li.style.alignItems = 'center';
-    li.style.justifyContent = 'start';
-    li.style.margin = '20px 20px';
-    li.style.fontSize = '17px';
-    li.style.fontFamily = "'Luckiest Guy', cursive";
-    li.style.letterSpacing = '1.5px';
-    li.style.gap = '20px';
+        const row = document.createElement('div');
+        row.style.display = 'flex';
+        row.style.justifyContent = 'space-between';
+        row.style.alignItems = 'center';
+        row.style.padding = '5px 20px';
+        row.style.fontSize = '17px';
+        row.style.fontFamily = "'Luckiest Guy', cursive";
+        row.style.borderBottom = '1px solid #aaa';
+        row.style.color = '#fff';
+        row.style.gap = '20px';
 
-    const wrapperId = `leaderboard-stats-${index}`;
+        // Highlight top 3
+        if (index === 0) {
+        row.classList.add('sparkle-gold'); 
+        } else if (index === 1) {
+        row.classList.add('sparkle-silver'); 
+        } else if (index === 2) {
+        row.classList.add('sparkle-bronze');
+        }
 
-    li.innerHTML = `
-        <span style="width: 30px; text-align: center; color: #fff;">
-        <strong>${index + 1}</strong>
-        </span>
+        row.innerHTML = `
+            <span style="flex: 2; text-align: left;">${player_name}</span>
+            <span style="flex: 1; text-align: left;">${score}</span>
+            <span style="flex: 1; text-align: left;">${calories}</span>
+        `;
 
-        <span style="color: #fff; letter-spacing: 1.5px;">
-        ${player_name}
-        </span>
-
-        <span id="${wrapperId}" style="
-        padding: 2px 20px 2px 40px;
-        background-color: #fff;
-        border-radius: 5px;
-        color: #3f3c36;
-        display: flex;
-        gap: 20px;
-        align-items: center;
-        font-size: 17px;
-        position: relative;
-        ">
-        <img src="assets/icons/medals.svg" alt="medal" style="
-            width: 40px;
-            height: 40px;
-            position: absolute;
-            left: -13px;
-            top: 50%;
-            transform: translateY(-50%);
-        ">
-        <span>${score}</span>
-        <span>${calories}</span>
-        </span>
-    `;
-
-    leaderboardList.appendChild(li);
+        leaderboardList.appendChild(row);
     });
 }
 
@@ -162,13 +154,15 @@ export async function showLeaderboardUI() {
         const restartBtn = document.getElementById('restartBtn');
         const homeBtn = document.getElementById('homeBtn');
 
-        if (closePauseBtn && !closePauseBtn.hasClickListener) {
-            closePauseBtn.addEventListener('click', () => {
+        const closeLeaderboardBtn = document.getElementById('close-leaderboard');
+        if (closeLeaderboardBtn && !closeLeaderboardBtn.dataset.listenerAttached) {
+            closeLeaderboardBtn.addEventListener('click', () => {
                 if (this.clickSound) this.clickSound.play();
-                pauseOverlay.style.display = 'none';
-                this.togglePause(false); 
+                document.getElementById('leaderboard-container').style.display = 'none';
+                document.querySelector('.overlay').style.display = 'none';
+                this.scene.resume();
             });
-            closePauseBtn.hasClickListener = true;
+            closeLeaderboardBtn.dataset.listenerAttached = 'true';
         }
 
         if (restartBtn && !restartBtn.hasClickListener) {
@@ -205,79 +199,37 @@ export async function showLeaderboardUI() {
 
         this.scoreText = this.add.text(10, 7, 'SCORE: 0', 
         { 
-            fontSize: '15px', 
+            fontSize: '18px', 
             fill: '#fff', 
-            fontFamily: 'Arial', 
-            fontStyle: 'bold',
-
-            stroke: '#729C97',
-            strokeThickness: 1.5,
-            shadow: {
-                offsetX: 1,
-                offsetY: 1,
-                color: '#000',
-                blur: 4,
-                stroke: true,
-                fill: true
-            } 
+            fontFamily: 'Luckiest Guy', 
+            letterSpacing: '1.5px',
         }).setScrollFactor(0);
         this.scoreText.setResolution(3);
 
         this.caloriesText = this.add.text(120, 7, 'CALORIES: 0', 
         { 
-            fontSize: '15px', 
+            fontSize: '18px', 
             fill: '#fff', 
-            fontFamily: 'Arial', 
-            fontStyle: 'bold',
-
-            stroke: '#729C97',
-            strokeThickness: 1.5,
-            shadow: {
-                offsetX: 1,
-                offsetY: 1,
-                color: '#000',
-                blur: 4,
-                stroke: true,
-                fill: true
-            } 
+            fontFamily: 'Luckiest Guy', 
+            letterSpacing: '1.5px', 
         }).setScrollFactor(0);
         this.caloriesText.setResolution(3);
 
         this.timeLeftText = this.add.text(270, 7, 'TIME: 5:00', 
         { 
-            fontSize: '15px', 
+            fontSize: '18px', 
             fill: '#fff', 
-            fontFamily: 'Arial', 
-            fontStyle: 'bold',
-            stroke: '#729C97',
-            strokeThickness: 1.5,
-            shadow: {
-                offsetX: 1,
-                offsetY: 1,
-                color: '#000',
-                blur: 2,
-                stroke: true,
-                fill: true
-            } 
+            fontFamily: 'Luckiest Guy', 
+            letterSpacing: '1.5px', 
         }).setScrollFactor(0);  
         this.timeLeftText.setResolution(3);
 
         this.distanceText = this.add.text(390, 7, 'Distance: 0 m', 
         { 
-            fontSize: '15px', 
+            fontSize: '18px', 
             fill: '#fff', 
-            fontFamily: 'Arial', 
-            fontStyle: 'bold',
-            stroke: '#729C97',
-            strokeThickness: 1.5,
-            shadow: {
-                offsetX: 1,
-                offsetY: 1,
-                color: '#000',
-                blur: 2,
-                stroke: true,
-                fill: true
-            } 
+            fontFamily: 'Luckiest Guy', 
+            letterSpacing: '1.5px',
         }).setScrollFactor(0);  
         this.distanceText.setResolution(3);   
         
@@ -285,8 +237,8 @@ export async function showLeaderboardUI() {
 
         for (let i = 0; i < 3; i++) {
             const heart = this.add.image(570 + i * 34, 17, 'heart')
-                .setScale(0.040) // scale to fit nicely
-                .setScrollFactor(0); // fix to camera
+                .setScale(0.040)
+                .setScrollFactor(0);
 
             this.hearts.push(heart);
         }
@@ -295,51 +247,20 @@ export async function showLeaderboardUI() {
             fontSize: '30px', fontFamily: 'Luckiest Guy', fill: '#7AAFBA'
         }).setAlpha(0);
 
-        // Load voice
-        const loadVoices = () => {
-            const voices = speechSynthesis.getVoices();
-            if (voices.length > 0) {
-                this.selectedVoice = voices.find(v =>
-                    v.name.includes("Microsoft Zira") ||
-                    v.name.includes("Microsoft Mark") ||
-                    v.name.includes("Google UK English Male") ||
-                    v.name.includes("Google US English") ||
-                    v.name.includes("Alex") ||
-                    v.name.includes("Samantha") ||
-                    v.name.includes("Daniel")
-                );
-            }
-        };
-        loadVoices();
-        if (speechSynthesis.onvoiceschanged !== undefined) {
-            speechSynthesis.onvoiceschanged = loadVoices;
-        }
-
         // Music and sound settings
         this.bgMusic = this.sound.get('start-sound');
         if (this.registry.get('musicEnabled') && !this.bgMusic.isPlaying) {
             this.bgMusic.play({ loop: true, volume: this.registry.get('musicVolume') });
         }
 
-        this.voiceEnabled = this.registry.get('soundEnabled');
-
         // Pause button
-        this.pauseButton = this.add.text(width - 33, 1, '⏸', {
-            fontSize: '27px',
-            color: '#fff',
-            fontFamily: 'Luckiest Guy',
-            stroke: '#729C97', 
-            strokeThickness: 1.5,
-            shadow: {
-                offsetX: 1,
-                offsetY: 1,
-                color: '#000',
-                blur: 8,
-                stroke: true,
-                fill: true
-            }
-        }).setOrigin(1, 0).setInteractive({ useHandCursor: true });
-        this.pauseButton.setResolution(3);
+        this.pauseButton = this.add.image(width - 40, 5, 'pause-icon')
+            .setDisplaySize(25, 25)
+            .setOrigin(1, 0)
+            .setInteractive({ useHandCursor: true });
+
+        this.pauseButton.setScrollFactor(0);
+        this.pauseButton.setDepth(10);
 
 
         this.pauseButton.on('pointerdown', () => {
@@ -349,23 +270,13 @@ export async function showLeaderboardUI() {
         });
 
         // SETTINGS button
-        const settingsBtn = this.add.text(width - 10, 1, '⚙', {
-            fontSize: '27px',
-            color: '#fff',
-            fontStyle: 'bold',            
-            fontFamily: 'Luckiest Guy',
-            stroke: '#729C97',
-            strokeThickness: 1.5,
-            shadow: {  
-                offsetX: 1,
-                offsetY: 1,
-                color: '#000',
-                blur: 8,
-                stroke: true,
-                fill: true
-            }
-        }).setOrigin(1, 0).setInteractive({ useHandCursor: true });
-        settingsBtn.setResolution(3);
+        const settingsBtn = this.add.image(width - 10, 5, 'settings-icon')
+            .setDisplaySize(25, 25)
+            .setOrigin(1, 0)
+            .setInteractive({ useHandCursor: true });
+
+        settingsBtn.setDepth(10);
+        settingsBtn.setScrollFactor(0);
 
         settingsBtn.on('pointerdown', () => {
             if (this.clickSound) this.clickSound.play();
@@ -443,11 +354,21 @@ export async function showLeaderboardUI() {
                 });
                 closeLeaderboardBtn.hasListener = true;
             }
+
+            const closePauseBtn = document.getElementById('closePauseBtn');
+            if (closePauseBtn && !closePauseBtn.hasClickListener) {
+                closePauseBtn.addEventListener('click', () => {
+                    if (this.clickSound) this.clickSound.play();
+                    document.getElementById('pauseOverlay').style.display = 'none';
+                    this.togglePause(false);
+                });
+                closePauseBtn.hasClickListener = true;
+            }
         }
 
         // Trophy
-        this.leaderboardIcon = this.add.image(width - 60, 5, 'trophy-icon')
-            .setDisplaySize(28, 28)
+        this.leaderboardIcon = this.add.image(width - 70, 5, 'trophy-icon')
+            .setDisplaySize(25, 25)
             .setOrigin(1, 0)
             .setInteractive({ useHandCursor: true });
 
@@ -493,16 +414,6 @@ export async function showLeaderboardUI() {
                         });
                     }
                 });
-
-                if (this.registry.get('soundEnabled')) {
-                    const utterance = new SpeechSynthesisUtterance(message);
-                    utterance.pitch = 1.8;
-                    utterance.rate = 1.5;
-                    utterance.volume = this.registry.get('soundVolume') ?? 0.5;
-                    if (this.selectedVoice) utterance.voice = this.selectedVoice;
-                    speechSynthesis.cancel();
-                    speechSynthesis.speak(utterance);
-                }
             }
         });
 

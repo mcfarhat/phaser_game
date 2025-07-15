@@ -179,6 +179,28 @@
         transform: scale(1.1);
         background: #729C97;
       }
+
+      .sparkle-gold {
+        background: linear-gradient(90deg, #FFD700, #FFEA70, #FFD700);
+        color: #3f3c36;
+        border-radius: 10px;
+        text-shadow: 0 0 5px rgba(255, 215, 0, 0.7);
+      }
+
+      .sparkle-silver {
+        background: linear-gradient(90deg, #C0C0C0, #E0E0E0, #C0C0C0);
+        color: #3f3c36;
+        border-radius: 10px;
+        text-shadow: 0 0 5px rgba(192, 192, 192, 0.7);
+      }
+
+      .sparkle-bronze {
+        background: linear-gradient(90deg, #CD7F32, #E2B87B, #CD7F32);
+        color: #3f3c36;
+        border-radius: 10px;
+        text-shadow: 0 0 5px rgba(205, 127, 50, 0.7);
+      }
+
     </style>
 </head>
 <body>
@@ -208,7 +230,7 @@
       </div>
     </div>     
     
-    <!-- Leaderboard Panel -->
+<!-- Leaderboard Panel -->
 <div id="leaderboard-container" style="
     display: none;
     background-color: #59544C;
@@ -241,10 +263,16 @@
     ">Leaderboard</h3>
 
     <ul id="leaderboard-list" style="
-        list-style: none;
-        padding: 0;
-        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
         overflow-y: auto;
+        padding: 0 5px;
+        box-sizing: border-box;
+        font-size: 20px;
+        font-family: 'Luckiest Guy', cursive;
+        list-style: none;
+        margin: 0;
     "></ul>
 
     <button id="close-leaderboard" style="
@@ -255,11 +283,13 @@
         border: none;
         border-radius: 50px;
         cursor: pointer;
+        margin-top: 10px;
         box-shadow: 0 4px 8px rgba(0,0,0,0.4);
         transition: transform 0.1s ease;
         font-family: 'Luckiest Guy', cursive;
     ">CLOSE</button>
 </div>
+
 
 
     <!-- The div where Phaser will inject the game canvas -->
@@ -277,12 +307,7 @@
           const sound = document.getElementById('soundSlider').value;
           const music = document.getElementById('musicSlider').value;
         }
-
-        document.getElementById('closePauseBtn')?.addEventListener('click', () => {
-        document.getElementById('pauseOverlay').style.display = 'none';
-        this.scene.resume('GameScene');
-      });
-
+        
       window.addEventListener('load', () => {
       const closeBtn = document.getElementById('close-leaderboard');
       const leaderboardPanel = document.getElementById('leaderboard-container');

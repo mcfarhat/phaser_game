@@ -52,23 +52,13 @@ export default class StartScene extends Phaser.Scene {
         };
 
         // SETTINGS BUTTON
-        const settingsBtn = this.add.text(width - 10, 5, '⚙', {
-            fontSize: '27px',
-            color: '#FFF',
-            fontStyle: 'bold',
-            fontFamily: 'Luckiest Guy',
-            stroke: '#729C97',
-            strokeThickness: 1.5,
-            shadow: {
-                offsetX: 1,
-                offsetY: 1,
-                color: '#000',
-                blur: 8,
-                stroke: true,
-                fill: true
-            }
-        }).setOrigin(1, 0).setInteractive({ useHandCursor: true });
-        settingsBtn.setResolution(3);
+        const settingsBtn = this.add.image(width - 10, 5, 'settings-icon')
+            .setDisplaySize(25, 25)
+            .setOrigin(1, 0)
+            .setInteractive({ useHandCursor: true });
+
+        settingsBtn.setDepth(10);
+        settingsBtn.setScrollFactor(0);
 
         settingsBtn.on('pointerdown', () => {
             playClickSound();
@@ -79,8 +69,8 @@ export default class StartScene extends Phaser.Scene {
             document.getElementById('soundSlider').value = this.registry.get('soundVolume') * 100;
         });
 
-        this.leaderboardIcon = this.add.image(width - 40, 5, 'trophy-icon')
-            .setDisplaySize(28, 28)
+        this.leaderboardIcon = this.add.image(width - 39, 5, 'trophy-icon')
+            .setDisplaySize(25, 25)
             .setOrigin(1, 0)
             .setInteractive({ useHandCursor: true });
 
@@ -434,15 +424,11 @@ export default class StartScene extends Phaser.Scene {
         }
     }
 
-
     displayWelcomeMessage(name) {
         this.add.text(10, 7, `WELCOME, ${name}!`, {
-            fontFamily: 'Arial',
-            fontSize: '16px',
+            fontFamily: 'Luckiest Guy',
+            fontSize: '20px',
             fill: '#ffffff',
-            fontStyle: 'bold',
-            stroke: '#000000',
-            strokeThickness: 2,
             letterSpacing: '1.2px'
         }).setDepth(10);
     }
