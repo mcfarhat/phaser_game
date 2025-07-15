@@ -188,8 +188,10 @@ export default class StartScene extends Phaser.Scene {
 
         this.startButton.on('pointerdown', () => {
             playClickSound();
-            this.scene.start('GameScene', { 
+            this.scene.start('GameScene', {
+                 
                 selectedCharacter: this.selectedCharacter,
+                 levelId: 1,
                 playerName: this.playerName,
                 startTimer: true
             });

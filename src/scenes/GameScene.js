@@ -1,4 +1,4 @@
-import { PLAYER_CONFIGS, powerUpTypes, hazardTypes, obstacleTypes } from '../config.js';
+import { PLAYER_CONFIGS, powerUpTypes, hazardTypes, obstacleTypes, LEVEL_CONFIGS } from '../config.js';
 import { supabase } from '../supabaseClient.js';
 
 async function submitScore(player_name, score, calories) {
@@ -119,16 +119,14 @@ export async function showLeaderboardUI() {
 }
 
 
-    export default class GameScene extends Phaser.Scene {
-        constructor() {
-            super({ key: 'GameScene' });
-            this.gameSpeed = 4;
-            this.lastSpawnedItemX = -Infinity;
-            this.lastSpawnedItemY = -Infinity;
-            this.minDistanceBetweenItems = 150;
-            this.minYDistanceBetweenItems = 120; 
-            this.itemSpawnHeightRange = [150, 300];
-            this.selectedVoice = null;
+export default class GameScene extends Phaser.Scene {
+    constructor() {
+        super({ key: 'GameScene' });
+        this.lastSpawnedItemX = -Infinity;
+        this.lastSpawnedItemY = -Infinity;
+        this.minDistanceBetweenItems = 150;
+        this.minYDistanceBetweenItems = 120; 
+        this.selectedVoice = null;
     }
 
     init(data) {
@@ -138,6 +136,13 @@ export async function showLeaderboardUI() {
             this.levelDuration = 5 * 60 * 1000; // 5 minutes
             this.shouldStartTimer = true;
         }
+
+        this.levelId = data.levelId || 1;
+        this.levelConfig = LEVEL_CONFIGS.find(l => l.id === this.levelId);
+
+        // ✅ Apply level difficulty parameters
+        this.gameSpeed = this.levelConfig.speed;
+        this.itemSpawnHeightRange = this.levelConfig.spawnRange;
     }
     
     preload() {}
@@ -190,6 +195,21 @@ export async function showLeaderboardUI() {
         const bg = this.textures.get('background').getSourceImage();
         this.background.setScale(width / bg.width, height / bg.height);
 
+        const hudHeight = 40;        // total height of the stats bar
+        const hudPadding = 10;       // inner padding for text
+
+        const hudBg = this.add.rectangle(
+        0,          // x
+        0,          // y
+        width,      // full width of the game canvas
+        hudHeight,  // height of the bar
+        0x000000,   // black
+        0.4         // 40% opacity
+        )
+        .setOrigin(0, 0)
+        .setScrollFactor(0)
+        .setDepth(50);
+
         this.score = 0;
         this.calories = 0;
         this.lives = 3;
@@ -197,48 +217,63 @@ export async function showLeaderboardUI() {
         this.levelEnded = false;
         this.timerStarted = false;
 
-        this.scoreText = this.add.text(10, 7, 'SCORE: 0', 
-        { 
+        const hudStyle = {
             fontSize: '18px', 
             fill: '#fff', 
             fontFamily: 'Luckiest Guy', 
             letterSpacing: '1.5px',
-        }).setScrollFactor(0);
-        this.scoreText.setResolution(3);
+        };
 
-        this.caloriesText = this.add.text(120, 7, 'CALORIES: 0', 
-        { 
-            fontSize: '18px', 
-            fill: '#fff', 
-            fontFamily: 'Luckiest Guy', 
-            letterSpacing: '1.5px', 
-        }).setScrollFactor(0);
-        this.caloriesText.setResolution(3);
+        // Score
+        this.scoreText = this.add.text(
+        hudPadding, hudPadding,
+        'SCORE: 0',
+        hudStyle
+        ).setScrollFactor(0).setDepth(51);
 
-        this.timeLeftText = this.add.text(270, 7, 'TIME: 5:00', 
-        { 
-            fontSize: '18px', 
-            fill: '#fff', 
-            fontFamily: 'Luckiest Guy', 
-            letterSpacing: '1.5px', 
-        }).setScrollFactor(0);  
-        this.timeLeftText.setResolution(3);
+        // Calories
+        this.caloriesText = this.add.text(
+        hudPadding + 110, hudPadding,
+        'CALORIES: 0',
+        hudStyle
+        ).setScrollFactor(0).setDepth(51);
 
-        this.distanceText = this.add.text(390, 7, 'Distance: 0 m', 
-        { 
-            fontSize: '18px', 
-            fill: '#fff', 
+        // Time Left
+        this.timeLeftText = this.add.text(
+        hudPadding + 260, hudPadding,
+        'TIME: 5:00',
+        hudStyle
+        ).setScrollFactor(0).setDepth(51);
+
+        // Distance
+        this.distanceText = this.add.text(
+        hudPadding + 390, hudPadding,
+        'DISTANCE: 0 m',
+        hudStyle
+        ).setScrollFactor(0).setDepth(51);   
+
+        this.levelText = this.add.text(
+        width / 2,                // center horizontally
+        hudHeight + hudPadding,   // just below the box
+        `LEVEL: ${this.levelId}`, // dynamic level number
+        {
+            fontSize: '25px',
+            fill: '#FFD700', // ← Gold color 
             fontFamily: 'Luckiest Guy', 
             letterSpacing: '1.5px',
-        }).setScrollFactor(0);  
-        this.distanceText.setResolution(3);   
+        }
+        )
+        .setOrigin(0.5, 0)  // center-align horizontally, top-align vertically
+        .setScrollFactor(0)
+        .setDepth(51);
         
         this.hearts = [];
 
         for (let i = 0; i < 3; i++) {
-            const heart = this.add.image(570 + i * 34, 17, 'heart')
-                .setScale(0.040)
-                .setScrollFactor(0);
+            const heart = this.add.image(565 + i * 35, 20, 'heart') // adjust position as needed
+                .setScale(0.040) // scale to fit nicely
+                .setScrollFactor(0) // fix to camera
+                .setDepth(60);
 
             this.hearts.push(heart);
         }
@@ -260,7 +295,7 @@ export async function showLeaderboardUI() {
             .setInteractive({ useHandCursor: true });
 
         this.pauseButton.setScrollFactor(0);
-        this.pauseButton.setDepth(10);
+        this.pauseButton.setDepth(60);
 
 
         this.pauseButton.on('pointerdown', () => {
@@ -275,7 +310,7 @@ export async function showLeaderboardUI() {
             .setOrigin(1, 0)
             .setInteractive({ useHandCursor: true });
 
-        settingsBtn.setDepth(10);
+        settingsBtn.setDepth(60);
         settingsBtn.setScrollFactor(0);
 
         settingsBtn.on('pointerdown', () => {
@@ -370,7 +405,9 @@ export async function showLeaderboardUI() {
         this.leaderboardIcon = this.add.image(width - 70, 5, 'trophy-icon')
             .setDisplaySize(25, 25)
             .setOrigin(1, 0)
-            .setInteractive({ useHandCursor: true });
+            .setInteractive({ useHandCursor: true })
+            .setDepth(60);
+
 
         this.leaderboardIcon.on('pointerdown', () => {
             if (this.clickSound) this.clickSound.play();
@@ -486,13 +523,13 @@ export async function showLeaderboardUI() {
 
         // Spawn events
         this.powerUpTimer = this.time.addEvent({
-            delay: Phaser.Math.Between(2500, 4500),
+            delay: this.levelConfig.powerUpFrequency,
             loop: true,
             callback: () => { if (!this.isPaused) this.spawnPowerUp(); }
         });
         
         this.hazardTimer = this.time.addEvent({
-            delay: Phaser.Math.Between(2000, 4000),
+            delay: this.levelConfig.hazardFrequency,
             loop: true,
             callback: () => { if (!this.isPaused) this.spawnHazard(); }
         });
@@ -502,7 +539,7 @@ export async function showLeaderboardUI() {
         });
 
         this.time.addEvent({
-            delay: Phaser.Math.Between(2500, 5000),
+            delay: this.levelConfig.obstacleFrequency,
             callback: this.spawnObstacle,
             callbackScope: this,
             loop: true
@@ -892,16 +929,23 @@ export async function showLeaderboardUI() {
         .setDepth(100);
     
     // Pulsing Title Animation
-    const levelCompleteText = this.add.text(width / 2, height * 0.2, 'LEVEL COMPLETE!', {
+    const levelNum = this.levelId || 1;
+    const levelCompleteText = this.add.text(
+        width / 2,
+        height * 0.2,
+        `LEVEL ${levelNum} COMPLETED!`,    
+        {
         fontSize: '48px',
         fill: '#7FFF00',
         fontFamily: 'Luckiest Guy',
         stroke: '#729C97',
         strokeThickness: 6,
         align: 'center'
-    }).setOrigin(0.5)
-     .setDepth(101)
-     .setResolution(3);
+        }
+    )
+    .setOrigin(0.5)
+    .setDepth(101)
+    .setResolution(3);
 
     this.tweens.add({
         targets: levelCompleteText,
@@ -975,7 +1019,7 @@ export async function showLeaderboardUI() {
     emitter.depth = 99;
 
     // Improved Button with Rounded Corners and Simple Hover Effect
-    const nextLevelButton = this.add.text(width / 2, height * 0.8, 'LEVEL 2', {
+    const nextLevelButton = this.add.text(width / 2, height * 0.8, 'Next LEVEL', {
         fontSize: '32px',
         fill: '#FFFFFF',
         fontFamily: 'Luckiest Guy',
@@ -1019,13 +1063,16 @@ export async function showLeaderboardUI() {
 
     nextLevelButton.on('pointerdown', () => {
         if (this.clickSound) this.clickSound.play();
-        this.scene.start('Level2Scene', { 
-            lives: this.lives,
-            score: this.score,
-            calories: this.calories,
-            distance: this.distance
+
+        const nextLevelId = (this.levelId || 1) + 1;
+
+        this.scene.start('GameScene', {
+            selectedCharacter: this.selectedCharacter,
+            levelId: nextLevelId,
+            startTimer: true
         });
     });
+
 }
 
 
