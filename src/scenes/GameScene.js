@@ -14,6 +14,8 @@ export default class GameScene extends Phaser.Scene {
         this.selectedCharacter = data.selectedCharacter;
         this.levelId = data.levelId || 1; // ✅ Move this up first
         this.levelConfig = LEVEL_CONFIGS.find(l => l.id === this.levelId); // now safe
+        
+
 
         if (data.startTimer) {
             this.levelDuration = this.levelConfig.duration;
@@ -30,6 +32,7 @@ export default class GameScene extends Phaser.Scene {
         
         this.elapsedTime = 0;           // Tracks gameplay time
         this.timerStarted = false;     // Starts true when actual timer begins
+        this.caloriesBurnedDistance = 0;
     }
 
     
@@ -170,6 +173,18 @@ export default class GameScene extends Phaser.Scene {
         .setOrigin(0.5, 0)  // center-align horizontally, top-align vertically
         .setScrollFactor(0)
         .setDepth(51);
+        // ✅ Burn calories per second
+this.calorieBurnTimer = this.time.addEvent({
+  delay: 1000,
+  loop: true,
+  callback: () => {
+    if (!this.isPaused && this.levelConfig.calorieBurnPerSecond) {
+      this.calories -= this.levelConfig.calorieBurnPerSecond;
+      this.caloriesText.setText('CALORIES: ' + Math.floor(this.calories));
+    }
+  }
+});
+
         
         this.hearts = [];
 
@@ -518,11 +533,16 @@ export default class GameScene extends Phaser.Scene {
         }
 
         if (Phaser.Input.Keyboard.JustDown(this.spacebar)) {
-            if (this.jumpCount < 2) {
-                this.runner.setVelocityY(-jumpHeight);
-                this.jumpCount++;
-            }
-        }
+  if (this.jumpCount < 2) {
+    this.runner.setVelocityY(-jumpHeight);
+    this.jumpCount++;
+
+    const jumpBurn = this.levelConfig.calorieBurnPerJump || 0;
+    this.calories -= jumpBurn;
+    this.caloriesText.setText('CALORIES: ' + Math.floor(this.calories));
+  }
+}
+
 
 
         // ✅ Cleanup
@@ -535,6 +555,15 @@ export default class GameScene extends Phaser.Scene {
 
         const deltaSeconds = delta / 1000;
         this.distance += this.gameSpeed * deltaSeconds / 10;
+        this.caloriesBurnedDistance += this.gameSpeed * deltaSeconds / 10;
+const burnPerMeter = this.levelConfig.calorieBurnPerMeter || 0;
+
+while (this.caloriesBurnedDistance >= 1) {
+  this.calories -= burnPerMeter;
+  this.caloriesBurnedDistance -= 1;
+}
+this.caloriesText.setText('CALORIES: ' + Math.floor(this.calories));
+
         this.caloriesText.setText('CALORIES: ' + this.calories);
         this.scoreText.setText('SCORE: ' + this.score);
 
