@@ -19,6 +19,7 @@
     "serve": "^14.0.0"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.50.3",
     "phaser": "^3.55.2"
   }
 }

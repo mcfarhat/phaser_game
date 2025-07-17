@@ -114,12 +114,12 @@
       .pause-card {
         background:#59544C;
         border-radius: 25px;
-        padding:10px 25px 20px 25px;
+        padding:13px 25px 20px 25px;
         text-align: center;
         box-shadow: 0 0 15px #00000066;
         position: absolute;
         top: 25%;
-        width: 180px;
+        width: 200px;
         height: 33%;
       }
       .pause-title {
@@ -152,11 +152,11 @@
         font-family: 'Luckiest Guy', cursive;
         color: #fff;
         border-radius: 12px;
-        width: 120px;
+        width: 140px;
         cursor: pointer;
         box-shadow: 0 4px 6px #00000033;
         transition: transform 0.2s ease;
-        letter-spacing: 1.2px;
+        letter-spacing: 2.4px;
         padding: 10px 7px;
       }
       #closePauseBtn {
@@ -179,6 +179,28 @@
         transform: scale(1.1);
         background: #729C97;
       }
+
+      .sparkle-gold {
+        background: linear-gradient(90deg, #c5ad26, #d3ba2d, #bca106);
+        color: #3f3c36;
+        border-radius: 10px;
+        text-shadow: 0 0 5px rgba(255, 215, 0, 0.7);
+      }
+
+      .sparkle-silver {
+        background: linear-gradient(90deg, #959595, #c3c3c3, #b2b1b1);
+        color: #3f3c36;
+        border-radius: 10px;
+        text-shadow: 0 0 5px rgba(192, 192, 192, 0.7);
+      }
+
+      .sparkle-bronze {
+        background: linear-gradient(90deg, #CD7F32, #E2B87B, #CD7F32);
+        color: #3f3c36;
+        border-radius: 10px;
+        text-shadow: 0 0 5px rgba(205, 127, 50, 0.7);
+      }
+
     </style>
 </head>
 <body>
@@ -208,7 +230,68 @@
       </div>
     </div>     
     
-      
+<!-- Leaderboard Panel -->
+<div id="leaderboard-container" style="
+    display: none;
+    background-color: #59544C;
+    border-radius: 30px;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+    padding: 15px 10px;
+    text-align: center;
+    color: #EFEFEF;
+    position: absolute;
+    flex-direction: column;
+    align-items: center;
+    z-index: 1000;
+    top: 18%;
+    left: 50%;
+    transform: translateX(-50%);
+">
+
+    <h3 style="
+        font-family: 'Luckiest Guy', cursive;
+        background-color: #3f3c36;
+        color: white;
+        border-radius: 35px;
+        margin: 5px 0 10px 0;
+        font-size: 28px;
+        padding: 7px 10px;
+        letter-spacing: 1.2px;
+        display: inline-block;
+        box-shadow: 0 2px 4px #00000088;
+        text-shadow: 2px 2px 4px rgba(0,0,0,1);
+    ">Leaderboard</h3>
+
+    <ul id="leaderboard-list" style="
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        overflow-y: auto;
+        padding: 0 5px;
+        box-sizing: border-box;
+        font-size: 20px;
+        font-family: 'Luckiest Guy', cursive;
+        list-style: none;
+        margin: 0;
+    "></ul>
+
+    <button id="close-leaderboard" style="
+        background-color: #7AAFBA;
+        color: #333;
+        font-size: 23px;
+        padding: 10px 25px;
+        border: none;
+        border-radius: 50px;
+        cursor: pointer;
+        margin-top: 10px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+        transition: transform 0.1s ease;
+        font-family: 'Luckiest Guy', cursive;
+    ">CLOSE</button>
+</div>
+
+
+
     <!-- The div where Phaser will inject the game canvas -->
     <div id="game-container"></div>
 
@@ -225,10 +308,11 @@
           const music = document.getElementById('musicSlider').value;
         }
 
-        document.getElementById('closePauseBtn')?.addEventListener('click', () => {
-        document.getElementById('pauseOverlay').style.display = 'none';
-        this.scene.resume('GameScene');
-      });
+      window.addEventListener('load', () => {
+      const closeBtn = document.getElementById('close-leaderboard');
+      const leaderboardPanel = document.getElementById('leaderboard-container');
+    });
+
     </script>
 </body>
 </html>
