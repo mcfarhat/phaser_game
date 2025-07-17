@@ -160,7 +160,15 @@ export default class GameScene extends Phaser.Scene {
         const { width, height } = this.sys.game.config;
         const config = PLAYER_CONFIGS.find(p => p.key === this.selectedCharacter);
         this.isPaused = false;
-        
+
+        const soundVolume = this.registry.get('soundVolume');
+
+        this.hitSound = this.sound.add('hit-sound', { volume: soundVolume });
+        this.gameOverSound = this.sound.add('game-over', { volume: soundVolume });
+        this.levelCompleteSound = this.sound.add('level-complete', { volume: soundVolume });
+        this.collectItemSound = this.sound.add('collect-item', { volume: soundVolume });
+
+
         // Pause pannel
         const pauseOverlay = document.getElementById('pauseOverlay');
         const closePauseBtn = document.getElementById('closePauseBtn');
@@ -748,6 +756,8 @@ export default class GameScene extends Phaser.Scene {
         const data = powerUpTypes.find(p => p.key === item.texture.key);
         if (!data) return;
 
+        this.collectItemSound.setVolume(this.registry.get('soundVolume')).play();
+
         this.score += data.score;
         this.calories += data.calories;
 
@@ -760,6 +770,8 @@ export default class GameScene extends Phaser.Scene {
     collectHazard(player, item) {
         const data = hazardTypes.find(h => h.key === item.texture.key);
         if (!data) return;
+
+        this.collectItemSound.setVolume(this.registry.get('soundVolume')).play();
 
         this.score += data.score; // this will reduce score since it's negative
         this.calories += data.calories;
@@ -804,7 +816,17 @@ export default class GameScene extends Phaser.Scene {
                     ]
                 });
             }
+             if (this.lives > 0 && this.hitSound && this.registry.get('soundEnabled')) {
+                this.hitSound.setVolume(this.registry.get('soundVolume'));
+                this.hitSound.play();
+            }
+
             if (this.lives === 0) {
+                if (this.gameOverSound && this.registry.get('soundEnabled')) {
+                    this.gameOverSound.setVolume(this.registry.get('soundVolume'));
+                    this.gameOverSound.play();
+                }
+
                 this.gameOver();
             }
         }
@@ -812,6 +834,16 @@ export default class GameScene extends Phaser.Scene {
 
     gameOver() {
         this.togglePause(true);
+
+        const soundEnabled = this.registry.get('soundEnabled') ?? true;
+        const soundVolume = this.registry.get('soundVolume');
+
+        if (soundEnabled) {
+            const gameOverSound = this.sound.get('game-over') || this.sound.add('game-over');
+
+            gameOverSound.setVolume(soundVolume);
+            gameOverSound.play();
+        }
 
         // Stop player movement and animation
         this.runner.setVelocity(0);
@@ -949,6 +981,11 @@ export default class GameScene extends Phaser.Scene {
         // Stop player movement and animation
         this.runner.setVelocity(0);
         this.runner.anims.stop();
+
+        if (this.levelCompleteSound && this.registry.get('soundEnabled')) {
+            this.levelCompleteSound.setVolume(this.registry.get('soundVolume'));
+            this.levelCompleteSound.play();
+        }
         
         this.showLevelCompleteScreen();
     }
