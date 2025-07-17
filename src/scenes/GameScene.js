@@ -184,7 +184,8 @@ this.calorieBurnTimer = this.time.addEvent({
   callback: () => {
     if (!this.isPaused && this.levelConfig.calorieBurnPerSecond) {
       this.calories -= this.levelConfig.calorieBurnPerSecond;
-      this.caloriesText.setText('CALORIES: ' + Math.floor(this.calories));
+      this.updateCaloriesText();
+
     }
   }
 });
@@ -543,7 +544,8 @@ this.calorieBurnTimer = this.time.addEvent({
 
     const jumpBurn = this.levelConfig.calorieBurnPerJump || 0;
     this.calories -= jumpBurn;
-    this.caloriesText.setText('CALORIES: ' + Math.floor(this.calories));
+    this.updateCaloriesText();
+
   }
 }
 
@@ -569,7 +571,6 @@ while (this.caloriesBurnedDistance >= 1) {
 this.updateCaloriesText();
 
 
-        this.caloriesText.setText('CALORIES: ' + this.calories);
         this.scoreText.setText('SCORE: ' + this.score);
 
         this.distanceText.setText('DISTANCE: ' + Math.floor(this.distance) + ' m');
