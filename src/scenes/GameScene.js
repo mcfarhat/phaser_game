@@ -12,6 +12,7 @@ export default class GameScene extends Phaser.Scene {
 
     init(data) {
         this.selectedCharacter = data.selectedCharacter;
+
         this.levelId = data.levelId || 1; // ✅ Move this up first
         this.levelConfig = LEVEL_CONFIGS.find(l => l.id === this.levelId); // now safe
 
@@ -35,12 +36,21 @@ export default class GameScene extends Phaser.Scene {
     
     preload() {}
 
-
     create() {
         const { width, height } = this.sys.game.config;
         const config = PLAYER_CONFIGS.find(p => p.key === this.selectedCharacter);
         this.isPaused = false;
+
+        this.load.spritesheet(config.key, config.sprite, {
+                frameWidth: config.frameWidth,
+                frameHeight: config.frameHeight,
+                margin: 0,
+                spacing: 0
+            });
         
+        console.log(this.selectedCharacter);
+        console.log(config);
+
         // Pause pannel
         const pauseOverlay = document.getElementById('pauseOverlay');
         const closePauseBtn = document.getElementById('closePauseBtn');

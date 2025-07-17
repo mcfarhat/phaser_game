@@ -4,7 +4,6 @@ import { PLAYER_CONFIGS } from '../config.js';
 export default class BootScene extends Phaser.Scene {
     constructor() {
         super({ key: 'BootScene' });
-        this.selectedCharacter = 'runner9';
     }
 
     preload() {
@@ -103,6 +102,6 @@ export default class BootScene extends Phaser.Scene {
             volume: soundVolume
         });
 
-        this.scene.start('StartScene', { selectedCharacter: this.selectedCharacter });
+        this.scene.start('StartScene');
     }
 }
