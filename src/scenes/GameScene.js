@@ -37,6 +37,10 @@ export default class GameScene extends Phaser.Scene {
 
     
     preload() {}
+    updateCaloriesText() {
+  this.caloriesText.setText('CALORIES: ' + Math.floor(this.calories));
+}
+
 
 
     create() {
@@ -562,7 +566,8 @@ while (this.caloriesBurnedDistance >= 1) {
   this.calories -= burnPerMeter;
   this.caloriesBurnedDistance -= 1;
 }
-this.caloriesText.setText('CALORIES: ' + Math.floor(this.calories));
+this.updateCaloriesText();
+
 
         this.caloriesText.setText('CALORIES: ' + this.calories);
         this.scoreText.setText('SCORE: ' + this.score);
@@ -687,7 +692,8 @@ this.caloriesText.setText('CALORIES: ' + Math.floor(this.calories));
         this.calories += data.calories;
 
         this.scoreText.setText('SCORE: ' + this.score);
-        this.caloriesText.setText('CALORIES: ' + this.calories);
+        this.updateCaloriesText();
+
 
         item.destroy();
     }
@@ -700,7 +706,8 @@ this.caloriesText.setText('CALORIES: ' + Math.floor(this.calories));
         this.calories += data.calories;
 
         this.scoreText.setText('SCORE: ' + this.score);
-        this.caloriesText.setText('CALORIES: ' + this.calories);
+        this.updateCaloriesText();
+
 
         item.destroy();
     }

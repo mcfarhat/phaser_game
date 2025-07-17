@@ -236,7 +236,7 @@ export const LEVEL_CONFIGS = [
     spawnRange: [150, 300],
     label: 'Level 1',
     calorieBurnPerSecond: 1.0,
-  calorieBurnPerJump: 50,
+  calorieBurnPerJump: 5,
   calorieBurnPerMeter: 2,
       
 
