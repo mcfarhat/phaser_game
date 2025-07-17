@@ -75,7 +75,15 @@ export default class BootScene extends Phaser.Scene {
             });
         });
 
-        this.load.image('heart', 'assets/heart.svg');
+        this.load.image('heart', 'assets/icons/heart.svg');
+        this.load.image('medal', 'assest/icons/medals.svg');
+        this.load.image('trophy-icon', 'assets/icons/trophy.svg');
+        this.load.image('settings-icon', 'assets/icons/settings.svg');
+        this.load.image('pause-icon', 'assets/icons/pause.svg');
+        this.load.audio('game-over', 'assets/sounds/game-over.mp3');
+         this.load.audio('hit-sound', 'assets/sounds/hit.mp3');
+         this.load.audio('level-complete', 'assets/sounds/level-complete.mp3');
+         this.load.audio('collect-item', 'assets/sounds/collect.mp3');
     }
 
     create() {

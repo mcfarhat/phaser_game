@@ -1,4 +1,123 @@
 import { PLAYER_CONFIGS, powerUpTypes, hazardTypes, obstacleTypes, LEVEL_CONFIGS } from '../config.js';
+import { supabase } from '../supabaseClient.js';
+
+async function submitScore(player_name, score, calories) {
+    const { data: existing, error: fetchError } = await supabase
+        .from('leaderboard')
+        .select('*')
+        .eq('player_name', player_name)
+        .single();
+
+    if (fetchError && fetchError.code !== 'PGRST116') {
+        console.error('Error checking existing score:', fetchError.message);
+        return;
+    }
+
+    if (!existing || score > existing.score || calories > existing.calories) {
+        console.log("Submitting:", {
+            player_name,
+            score: Math.max(score, existing?.score ?? 0),
+            calories: Math.max(calories, existing?.calories ?? 0),
+            existing
+        });
+
+        const { data, error } = await supabase
+            .from('leaderboard')
+            .upsert([
+                {
+                    player_name,
+                    score: Math.max(score, existing?.score ?? 0),
+                    calories: Math.max(calories, existing?.calories ?? 0)
+                }
+            ], { onConflict: ['player_name'] });
+
+        if (error) {
+            console.error('Error updating leaderboard:', error.message);
+        } else {
+            console.log('Leaderboard updated:', data);
+        }
+    } else {
+        console.log('Score not high enough to update.');
+    }
+}
+
+export async function fetchAndDisplayLeaderboard() {
+    const leaderboardList = document.getElementById('leaderboard-list');
+    leaderboardList.innerHTML = ''; // Clear any existing content
+
+    // Header Row (as a div)
+    const headerRow = document.createElement('div');
+    headerRow.style.display = 'flex';
+    headerRow.style.flexDirection = 'row';
+    headerRow.style.justifyContent = 'space-between';
+    headerRow.style.alignItems = 'center';
+    headerRow.style.gap = '20px';
+    headerRow.style.padding = '8px 20px';
+    headerRow.style.fontSize = '17px';
+    headerRow.style.letterSpacing = '1.2px';
+    headerRow.style.color = '#FFF';
+    headerRow.style.borderBottom = '2px solid #EFEFEF';
+    headerRow.style.marginBottom = '8px';
+    headerRow.style.fontFamily = "'Luckiest Guy', cursive";
+
+    headerRow.innerHTML = `
+        <span style="flex: 2; text-align: left;">NICKNAME</span>
+        <span style="flex: 1; text-align: right;">SCORE</span>
+        <span style="flex: 1; text-align: right;">CALORIES</span>
+    `;
+
+    leaderboardList.appendChild(headerRow);
+
+    // Fetch leaderboard data
+    const { data, error } = await supabase
+        .from('leaderboard')
+        .select('*')
+        .order('score', { ascending: false })
+        .order('calories', { ascending: false })
+        .limit(5);
+
+    if (error) {
+        console.error('Error fetching leaderboard:', error.message);
+        return;
+    }
+
+    data.forEach(({ player_name, score, calories }, index) => {
+        const row = document.createElement('div');
+        row.style.display = 'flex';
+        row.style.justifyContent = 'space-between';
+        row.style.alignItems = 'center';
+        row.style.padding = '5px 20px';
+        row.style.fontSize = '17px';
+        row.style.fontFamily = "'Luckiest Guy', cursive";
+        row.style.borderBottom = '1px solid #aaa';
+        row.style.color = '#fff';
+        row.style.gap = '20px';
+
+        // Highlight top 3
+        if (index === 0) {
+        row.classList.add('sparkle-gold'); 
+        } else if (index === 1) {
+        row.classList.add('sparkle-silver'); 
+        } else if (index === 2) {
+        row.classList.add('sparkle-bronze');
+        }
+
+        row.innerHTML = `
+            <span style="flex: 2; text-align: left;">${player_name}</span>
+            <span style="flex: 1; text-align: left;">${score}</span>
+            <span style="flex: 1; text-align: left;">${calories}</span>
+        `;
+
+        leaderboardList.appendChild(row);
+    });
+}
+
+export async function showLeaderboardUI() {
+    document.getElementById('leaderboard-container').style.display = 'flex';
+    document.querySelector('.overlay').style.display = 'block';
+    await fetchAndDisplayLeaderboard();
+}
+
 
 export default class GameScene extends Phaser.Scene {
     constructor() {
@@ -12,7 +131,7 @@ export default class GameScene extends Phaser.Scene {
 
     init(data) {
         this.selectedCharacter = data.selectedCharacter;
-
+        this.playerName = data.playerName;
         this.levelId = data.levelId || 1; // ✅ Move this up first
         this.levelConfig = LEVEL_CONFIGS.find(l => l.id === this.levelId); // now safe
 
@@ -36,20 +155,19 @@ export default class GameScene extends Phaser.Scene {
     
     preload() {}
 
+
     create() {
         const { width, height } = this.sys.game.config;
         const config = PLAYER_CONFIGS.find(p => p.key === this.selectedCharacter);
         this.isPaused = false;
 
-        this.load.spritesheet(config.key, config.sprite, {
-                frameWidth: config.frameWidth,
-                frameHeight: config.frameHeight,
-                margin: 0,
-                spacing: 0
-            });
-        
-        console.log(this.selectedCharacter);
-        console.log(config);
+        const soundVolume = this.registry.get('soundVolume');
+
+        this.hitSound = this.sound.add('hit-sound', { volume: soundVolume });
+        this.gameOverSound = this.sound.add('game-over', { volume: soundVolume });
+        this.levelCompleteSound = this.sound.add('level-complete', { volume: soundVolume });
+        this.collectItemSound = this.sound.add('collect-item', { volume: soundVolume });
+
 
         // Pause pannel
         const pauseOverlay = document.getElementById('pauseOverlay');
@@ -57,13 +175,15 @@ export default class GameScene extends Phaser.Scene {
         const restartBtn = document.getElementById('restartBtn');
         const homeBtn = document.getElementById('homeBtn');
 
-        if (closePauseBtn && !closePauseBtn.hasClickListener) {
-            closePauseBtn.addEventListener('click', () => {
+        const closeLeaderboardBtn = document.getElementById('close-leaderboard');
+        if (closeLeaderboardBtn && !closeLeaderboardBtn.dataset.listenerAttached) {
+            closeLeaderboardBtn.addEventListener('click', () => {
                 if (this.clickSound) this.clickSound.play();
-                pauseOverlay.style.display = 'none';
-                this.togglePause(false); 
+                document.getElementById('leaderboard-container').style.display = 'none';
+                document.querySelector('.overlay').style.display = 'none';
+                this.scene.resume();
             });
-            closePauseBtn.hasClickListener = true;
+            closeLeaderboardBtn.dataset.listenerAttached = 'true';
         }
 
         if (restartBtn && !restartBtn.hasClickListener) {
@@ -101,11 +221,9 @@ export default class GameScene extends Phaser.Scene {
         const bg = this.textures.get('background').getSourceImage();
         this.background.setScale(width / bg.width, height / bg.height);
 
-        // 1️⃣ HUD box parameters
         const hudHeight = 40;        // total height of the stats bar
         const hudPadding = 10;       // inner padding for text
 
-        // 2️⃣ Draw a semi-transparent rectangle across the top
         const hudBg = this.add.rectangle(
         0,          // x
         0,          // y
@@ -122,15 +240,10 @@ export default class GameScene extends Phaser.Scene {
         this.timerStarted = false;
 
         const hudStyle = {
-        fontSize: '19px',
-        fill: '#fff',
-        fontFamily: 'Arial',
-        fontStyle: 'bold',
-        stroke: '#729C97',
-        strokeThickness: 1.5,
-        shadow: {
-            offsetX: 1, offsetY: 1, color: '#000', blur: 4, stroke: true, fill: true
-        }
+            fontSize: '18px', 
+            fill: '#fff', 
+            fontFamily: 'Luckiest Guy', 
+            letterSpacing: '1.5px',
         };
 
         // Score
@@ -142,21 +255,21 @@ export default class GameScene extends Phaser.Scene {
 
         // Calories
         this.caloriesText = this.add.text(
-        hudPadding + 115, hudPadding,
+        hudPadding + 110, hudPadding,
         'CALORIES: 0',
         hudStyle
         ).setScrollFactor(0).setDepth(51);
 
         // Time Left
         this.timeLeftText = this.add.text(
-        hudPadding + 285, hudPadding,
+        hudPadding + 260, hudPadding,
         'TIME: 5:00',
         hudStyle
         ).setScrollFactor(0).setDepth(51);
 
         // Distance
         this.distanceText = this.add.text(
-        hudPadding + 400, hudPadding,
+        hudPadding + 390, hudPadding,
         'DISTANCE: 0 m',
         hudStyle
         ).setScrollFactor(0).setDepth(51);   
@@ -166,15 +279,10 @@ export default class GameScene extends Phaser.Scene {
         hudHeight + hudPadding,   // just below the box
         `LEVEL: ${this.levelId}`, // dynamic level number
         {
-            fontSize: '20px',
-            fill: '#FFD700', // ← Gold color
-            fontFamily: 'Arial',
-            fontStyle: 'bold',
-            stroke: '#729C97',
-            strokeThickness: 1.5,
-            shadow: {
-            offsetX: 1, offsetY: 1, color: '#000', blur: 4, stroke: true, fill: true
-            }
+            fontSize: '25px',
+            fill: '#FFD700', // ← Gold color 
+            fontFamily: 'Luckiest Guy', 
+            letterSpacing: '1.5px',
         }
         )
         .setOrigin(0.5, 0)  // center-align horizontally, top-align vertically
@@ -184,9 +292,10 @@ export default class GameScene extends Phaser.Scene {
         this.hearts = [];
 
         for (let i = 0; i < this.lives; i++) {
-            const heart = this.add.image(600 + i * 35, 22, 'heart') // adjust position as needed
+            const heart = this.add.image(565 + i * 35, 20, 'heart') // adjust position as needed
                 .setScale(0.040) // scale to fit nicely
-                .setScrollFactor(0); // fix to camera
+                .setScrollFactor(0) // fix to camera
+                .setDepth(60);
 
             this.hearts.push(heart);
         }
@@ -195,51 +304,20 @@ export default class GameScene extends Phaser.Scene {
             fontSize: '30px', fontFamily: 'Luckiest Guy', fill: '#7AAFBA'
         }).setAlpha(0);
 
-        // Load voice
-        const loadVoices = () => {
-            const voices = speechSynthesis.getVoices();
-            if (voices.length > 0) {
-                this.selectedVoice = voices.find(v =>
-                    v.name.includes("Microsoft Zira") ||
-                    v.name.includes("Microsoft Mark") ||
-                    v.name.includes("Google UK English Male") ||
-                    v.name.includes("Google US English") ||
-                    v.name.includes("Alex") ||
-                    v.name.includes("Samantha") ||
-                    v.name.includes("Daniel")
-                );
-            }
-        };
-        loadVoices();
-        if (speechSynthesis.onvoiceschanged !== undefined) {
-            speechSynthesis.onvoiceschanged = loadVoices;
-        }
-
         // Music and sound settings
         this.bgMusic = this.sound.get('start-sound');
         if (this.registry.get('musicEnabled') && !this.bgMusic.isPlaying) {
             this.bgMusic.play({ loop: true, volume: this.registry.get('musicVolume') });
         }
 
-        this.voiceEnabled = this.registry.get('soundEnabled');
-
         // Pause button
-        this.pauseButton = this.add.text(width - 37, 1, '⏸', {
-            fontSize: '27px',
-            color: '#fff',
-            fontFamily: 'Luckiest Guy',
-            stroke: '#729C97', 
-            strokeThickness: 1.5,
-            shadow: {
-                offsetX: 1,
-                offsetY: 1,
-                color: '#000',
-                blur: 8,
-                stroke: true,
-                fill: true
-            }
-        }).setOrigin(1, 0).setInteractive({ useHandCursor: true });
-        this.pauseButton.setResolution(3);
+        this.pauseButton = this.add.image(width - 40, 2, 'pause-icon')
+            .setDisplaySize(16, 31)
+            .setOrigin(1, 0)
+            .setInteractive({ useHandCursor: true });
+
+        this.pauseButton.setScrollFactor(0);
+        this.pauseButton.setDepth(60);
 
 
         this.pauseButton.on('pointerdown', () => {
@@ -249,23 +327,13 @@ export default class GameScene extends Phaser.Scene {
         });
 
         // SETTINGS button
-        const settingsBtn = this.add.text(width - 10, 1, '⚙', {
-            fontSize: '27px',
-            color: '#fff',
-            fontStyle: 'bold',            
-            fontFamily: 'Luckiest Guy',
-            stroke: '#729C97',
-            strokeThickness: 1.5,
-            shadow: {  
-                offsetX: 1,
-                offsetY: 1,
-                color: '#000',
-                blur: 8,
-                stroke: true,
-                fill: true
-            }
-        }).setOrigin(1, 0).setInteractive({ useHandCursor: true });
-        settingsBtn.setResolution(3);
+        const settingsBtn = this.add.image(width - 10, 6, 'settings-icon')
+            .setDisplaySize(25, 23)
+            .setOrigin(1, 0)
+            .setInteractive({ useHandCursor: true });
+
+        settingsBtn.setDepth(60);
+        settingsBtn.setScrollFactor(0);
 
         settingsBtn.on('pointerdown', () => {
             if (this.clickSound) this.clickSound.play();
@@ -275,7 +343,7 @@ export default class GameScene extends Phaser.Scene {
             document.querySelector('.panel').style.display = 'flex';
 
             // Pause the game
-            this.togglePause(true);
+            this.scene.pause();
 
             // Set slider values strictly from registry (no fallback)
             const musicSlider = document.getElementById('musicSlider');
@@ -328,11 +396,46 @@ export default class GameScene extends Phaser.Scene {
                 document.querySelector('.overlay').style.display = 'none';
                 document.querySelector('.panel').style.display = 'none';
 
-                this.togglePause(false);
-
+                this.scene.resume();
             });
             okButton.hasClickListener = true;
+
+            const closeLeaderboardBtn = document.getElementById('close-leaderboard');
+            if (closeLeaderboardBtn && !closeLeaderboardBtn.hasListener) {
+                closeLeaderboardBtn.addEventListener('click', () => {
+                    if (this.clickSound) this.clickSound.play();
+                    document.getElementById('leaderboard-container').style.display = 'none';
+                    document.querySelector('.overlay').style.display = 'none';
+                    this.scene.resume();
+                    closeLeaderboardBtn.hasListener = false;
+                });
+                closeLeaderboardBtn.hasListener = true;
+            }
+
+            const closePauseBtn = document.getElementById('closePauseBtn');
+            if (closePauseBtn && !closePauseBtn.hasClickListener) {
+                closePauseBtn.addEventListener('click', () => {
+                    if (this.clickSound) this.clickSound.play();
+                    document.getElementById('pauseOverlay').style.display = 'none';
+                    this.togglePause(false);
+                });
+                closePauseBtn.hasClickListener = true;
+            }
         }
+
+        // Trophy
+        this.leaderboardIcon = this.add.image(width - 63, 6, 'trophy-icon')
+            .setDisplaySize(25, 23)
+            .setOrigin(1, 0)
+            .setInteractive({ useHandCursor: true })
+            .setDepth(60);
+
+
+        this.leaderboardIcon.on('pointerdown', () => {
+            if (this.clickSound) this.clickSound.play();
+            this.scene.pause();
+            showLeaderboardUI();
+        });
 
         // Motivation text
         this.motivationTimer = this.time.addEvent({
@@ -370,16 +473,6 @@ export default class GameScene extends Phaser.Scene {
                         });
                     }
                 });
-
-                if (this.registry.get('soundEnabled')) {
-                    const utterance = new SpeechSynthesisUtterance(message);
-                    utterance.pitch = 1.8;
-                    utterance.rate = 1.5;
-                    utterance.volume = this.registry.get('soundVolume') ?? 0.5;
-                    if (this.selectedVoice) utterance.voice = this.selectedVoice;
-                    speechSynthesis.cancel();
-                    speechSynthesis.speak(utterance);
-                }
             }
         });
 
@@ -528,11 +621,11 @@ export default class GameScene extends Phaser.Scene {
         }
 
         if (Phaser.Input.Keyboard.JustDown(this.spacebar)) {
-            if (this.jumpCount < 2) {
-                this.runner.setVelocityY(-jumpHeight);
-                this.jumpCount++;
-            }
+        if (this.jumpCount < 2) {
+            this.runner.setVelocityY(-jumpHeight);
+            this.jumpCount++;
         }
+    }
 
 
         // ✅ Cleanup
@@ -545,9 +638,8 @@ export default class GameScene extends Phaser.Scene {
 
         const deltaSeconds = delta / 1000;
         this.distance += this.gameSpeed * deltaSeconds / 10;
-        this.caloriesText.setText('CALORIES: ' + this.calories);
+        this.caloriesText.setText('CALORIES: ' + this.calories );
         this.scoreText.setText('SCORE: ' + this.score);
-
         this.distanceText.setText('DISTANCE: ' + Math.floor(this.distance) + ' m');
         
 
@@ -598,11 +690,13 @@ export default class GameScene extends Phaser.Scene {
         }
     }
     
-    
-    isTooClose(newX, newY) {
-        const dx = Math.abs(newX - this.lastSpawnedItemX);
-        const dy = Math.abs(newY - this.lastSpawnedItemY);
-        return dx < this.minDistanceBetweenItems && dy < this.minYDistanceBetweenItems;
+    isTooClose(x, y) {
+        const minXGap = 500;
+        const minYGap = 100; 
+        return (
+            Math.abs(x - this.lastSpawnedItemX) < minXGap &&
+            Math.abs(y - this.lastSpawnedItemY) < minYGap
+        );
     }
 
     spawnPowerUp() {
@@ -612,7 +706,7 @@ export default class GameScene extends Phaser.Scene {
 
         let y, attempts = 0;
         do {
-            y = Phaser.Math.Between(...this.itemSpawnHeightRange);
+            y = Phaser.Math.Between(...this.itemSpawnHeightRange) - 80;
         } while (this.isTooClose(currentX, y) && ++attempts < 10);
 
         const item = this.powerUps.create(currentX, y, key);
@@ -631,7 +725,7 @@ export default class GameScene extends Phaser.Scene {
 
         let y, attempts = 0;
         do {
-            y = Phaser.Math.Between(...this.itemSpawnHeightRange);
+            y = Phaser.Math.Between(...this.itemSpawnHeightRange) - 50;
         } while (this.isTooClose(currentX, y) && ++attempts < 10);
 
         const item = this.hazards.create(currentX, y, key);
@@ -655,14 +749,14 @@ export default class GameScene extends Phaser.Scene {
         obstacle.body.allowGravity = false;
         obstacle.setImmovable(true);
         obstacle.setDepth(5);
-        // Shrink the obstacle hitbox and lower it to the feet/base
-        obstacle.body.setSize(60, 40);       // width, height of collider box
-        obstacle.body.setOffset(25, 70);     // x and y offset inside the sprite
-
+        obstacle.body.setSize(60, 40);
+        obstacle.body.setOffset(25, 70);
     }
     collectPowerUp(player, item) {
         const data = powerUpTypes.find(p => p.key === item.texture.key);
         if (!data) return;
+
+        this.collectItemSound.setVolume(this.registry.get('soundVolume')).play();
 
         this.score += data.score;
         this.calories += data.calories;
@@ -677,6 +771,8 @@ export default class GameScene extends Phaser.Scene {
         const data = hazardTypes.find(h => h.key === item.texture.key);
         if (!data) return;
 
+        this.collectItemSound.setVolume(this.registry.get('soundVolume')).play();
+
         this.score += data.score; // this will reduce score since it's negative
         this.calories += data.calories;
 
@@ -685,7 +781,6 @@ export default class GameScene extends Phaser.Scene {
 
         item.destroy();
     }
-
 
     hitObstacle(player, obstacle) {
         this.playHitFeedback();
@@ -701,8 +796,6 @@ export default class GameScene extends Phaser.Scene {
                 this.tweens.timeline({
                     targets: heart,
                     ease: 'Power1',
-                    
-    
                     tweens: [
                         {
                             scale: heart.scale * 1.3,
@@ -723,8 +816,17 @@ export default class GameScene extends Phaser.Scene {
                     ]
                 });
             }
+             if (this.lives > 0 && this.hitSound && this.registry.get('soundEnabled')) {
+                this.hitSound.setVolume(this.registry.get('soundVolume'));
+                this.hitSound.play();
+            }
 
             if (this.lives === 0) {
+                if (this.gameOverSound && this.registry.get('soundEnabled')) {
+                    this.gameOverSound.setVolume(this.registry.get('soundVolume'));
+                    this.gameOverSound.play();
+                }
+
                 this.gameOver();
             }
         }
@@ -732,6 +834,16 @@ export default class GameScene extends Phaser.Scene {
 
     gameOver() {
         this.togglePause(true);
+
+        const soundEnabled = this.registry.get('soundEnabled') ?? true;
+        const soundVolume = this.registry.get('soundVolume');
+
+        if (soundEnabled) {
+            const gameOverSound = this.sound.get('game-over') || this.sound.add('game-over');
+
+            gameOverSound.setVolume(soundVolume);
+            gameOverSound.play();
+        }
 
         // Stop player movement and animation
         this.runner.setVelocity(0);
@@ -771,6 +883,12 @@ export default class GameScene extends Phaser.Scene {
             }
         }).setOrigin(0.5).setResolution(3);
 
+        this.time.delayedCall(200, async () => {
+            const playerName = localStorage.getItem('playerName');
+            await submitScore(playerName, this.score, this.calories);
+            await showLeaderboardUI();
+        });
+        
         // Common button function
         const createButton = (label, x, y, callback) => {
             const btnWidth = 100;
@@ -863,6 +981,11 @@ export default class GameScene extends Phaser.Scene {
         // Stop player movement and animation
         this.runner.setVelocity(0);
         this.runner.anims.stop();
+
+        if (this.levelCompleteSound && this.registry.get('soundEnabled')) {
+            this.levelCompleteSound.setVolume(this.registry.get('soundVolume'));
+            this.levelCompleteSound.play();
+        }
         
         this.showLevelCompleteScreen();
     }
