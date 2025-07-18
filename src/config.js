@@ -245,6 +245,7 @@ export const LEVEL_CONFIGS = [
     obstacleFrequency: 5000,
     spawnRange: [150, 300],
     label: 'Level 1',
+    background: 'background1'
   },
   {
     id: 2,
@@ -255,6 +256,7 @@ export const LEVEL_CONFIGS = [
     obstacleFrequency: 4800,
     spawnRange: [150, 290],
     label: 'Level 2',
+    background: 'background2'
   },
   {
     id: 3,
@@ -265,6 +267,7 @@ export const LEVEL_CONFIGS = [
     obstacleFrequency: 4600,
     spawnRange: [150, 280],
     label: 'Level 3',
+    background: 'background3'
   },
   {
     id: 4,
@@ -275,6 +278,7 @@ export const LEVEL_CONFIGS = [
     obstacleFrequency: 4400,
     spawnRange: [145, 270],
     label: 'Level 4',
+    background: 'background4'
   },
   {
     id: 5,
@@ -285,6 +289,7 @@ export const LEVEL_CONFIGS = [
     obstacleFrequency: 4200,
     spawnRange: [145, 260],
     label: 'Level 5',
+    background: 'background5'
   },
   {
     id: 6,
@@ -295,6 +300,7 @@ export const LEVEL_CONFIGS = [
     obstacleFrequency: 4000,
     spawnRange: [140, 250],
     label: 'Level 6',
+    background: 'background6'
   },
   {
     id: 7,
@@ -305,6 +311,7 @@ export const LEVEL_CONFIGS = [
     obstacleFrequency: 3800,
     spawnRange: [135, 240],
     label: 'Level 7',
+    background: 'background7'
   },
   {
     id: 8,
@@ -315,6 +322,7 @@ export const LEVEL_CONFIGS = [
     obstacleFrequency: 3600,
     spawnRange: [130, 230],
     label: 'Level 8',
+    background: 'background8'
   },
   {
     id: 9,
@@ -325,6 +333,7 @@ export const LEVEL_CONFIGS = [
     obstacleFrequency: 3400,
     spawnRange: [125, 220],
     label: 'Level 9',
+    background: 'background9'
   },
   {
     id: 10,
@@ -335,5 +344,6 @@ export const LEVEL_CONFIGS = [
     obstacleFrequency: 3200,
     spawnRange: [120, 210],
     label: 'Level 10',
+    background: 'background10'
   }
 ];
