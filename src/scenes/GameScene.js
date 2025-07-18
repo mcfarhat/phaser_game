@@ -153,7 +153,14 @@ export default class GameScene extends Phaser.Scene {
     }
 
     
-    preload() {}
+    preload() {
+  // Dynamically load backgrounds from 1 to 10
+  for (let i = 1; i <= 10; i++) {
+    this.load.image(`background${i}`, `assets/backgrounds/background${i}.png`);
+  }
+
+}
+
 
 
     create() {
@@ -216,10 +223,16 @@ export default class GameScene extends Phaser.Scene {
         }
 
         // Background
-        this.background = this.add.tileSprite(0, 0, 0, 0, 'background')
-            .setOrigin(0).setScrollFactor(0).setDepth(-1);
-        const bg = this.textures.get('background').getSourceImage();
-        this.background.setScale(width / bg.width, height / bg.height);
+        const bgKey = this.levelConfig.background || 'background1';
+
+this.background = this.add.tileSprite(0, 0, 0, 0, bgKey)
+  .setOrigin(0)
+  .setScrollFactor(0)
+  .setDepth(-1);
+
+const bg = this.textures.get(bgKey).getSourceImage();
+this.background.setScale(width / bg.width, height / bg.height);
+
 
         const hudHeight = 40;        // total height of the stats bar
         const hudPadding = 10;       // inner padding for text
