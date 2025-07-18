@@ -7,7 +7,8 @@ export const PLAYER_CONFIGS = [
     scale: 1.1,
     x: 0.2,
     y: 125,
-    frames: 4
+    frames: 4,
+    unlockedBy: 'default'
   },
   {
     key: 'runner2',
@@ -17,7 +18,8 @@ export const PLAYER_CONFIGS = [
     scale: 3.5,
     x: 0.2,
     y: 135,
-    frames: 6
+    frames: 6,
+    unlockedBy: { type: 'score', value: 30 }
   },
   {
     key: 'runner3',
@@ -27,7 +29,8 @@ export const PLAYER_CONFIGS = [
     scale: 0.55,
     x: 0.3,
     y: 110,
-    frames: 8
+    frames: 8,
+    unlockedBy: { type: 'level', value: 3 }
   },
   {
     key: 'runner4',
@@ -37,7 +40,8 @@ export const PLAYER_CONFIGS = [
     scale: 1.3,
     x: 0.2,
     y: 100,
-    frames: 8
+    frames: 8,
+    unlockedBy: { type: 'score', value: 50 }
   },
   {
     key: 'runner5',
@@ -47,7 +51,8 @@ export const PLAYER_CONFIGS = [
     scale: 0.9,
     x: 0.15,
     y: 120,
-    frames: 8
+    frames: 8,
+    unlockedBy: { type: 'level', value: 5 }
   },
   {
     key: 'runner6',
@@ -57,7 +62,8 @@ export const PLAYER_CONFIGS = [
     scale: 1.1,
     x: 0.2,
     y: 100,
-    frames: 8
+    frames: 8,
+    unlockedBy: { type: 'score', value: 70 }
   },
   {
     key: 'runner7',
@@ -67,7 +73,8 @@ export const PLAYER_CONFIGS = [
     scale: 0.65,
     x: 0.2,
     y: 125,
-    frames: 8
+    frames: 8,
+    unlockedBy: { type: 'level', value: 7 }
   },
   {
     key: 'runner8',
@@ -77,7 +84,8 @@ export const PLAYER_CONFIGS = [
     scale: 1.2,
     x: 0.2,
     y: 115,
-    frames: 8
+    frames: 8,
+    unlockedBy: { type: 'score', value: 90 }
   },
   {
     key: 'runner9',
@@ -87,7 +95,8 @@ export const PLAYER_CONFIGS = [
     scale: 2.3,
     x: 0.2,
     y: 130,
-    frames: 6
+    frames: 6,
+    unlockedBy: { type: 'level', value: 9 }
   },
   {
     key: 'runner10',
@@ -97,7 +106,8 @@ export const PLAYER_CONFIGS = [
     scale: 2,
     x: 0.2,
     y: 115,
-    frames: 6
+    frames: 6,
+    unlockedBy: { type: 'score', value: 100 }
   }
 ];
 
