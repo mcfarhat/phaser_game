@@ -8,7 +8,7 @@ export const PLAYER_CONFIGS = [
     x: 0.2,
     y: 125,
     frames: 4,
-    unlockedBy: 'default'
+    unlockedBy: {}
   },
   {
     key: 'runner2',
