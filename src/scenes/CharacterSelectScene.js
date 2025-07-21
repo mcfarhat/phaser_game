@@ -5,11 +5,17 @@ export default class CharacterSelectScene extends Phaser.Scene {
     super({ key: 'CharacterSelectScene' });
   }
 
+  init(data){
+    this.playerName = data.playerName;
+  }
+
   preload() {
+    
     // Load each character sprite
     PLAYER_CONFIGS.forEach(p => {
       this.load.image(p.key, p.sprite);
     });
+
   }
 
   create() {
@@ -78,9 +84,10 @@ export default class CharacterSelectScene extends Phaser.Scene {
     }
 
     confirmSelection() {
-        const chosenKey = PLAYER_CONFIGS[this.currentIndex].key;
+        const cfg = PLAYER_CONFIGS[this.currentIndex];
+        this.registry.set('selectedCharacter', cfg.key);
         this.scene.start('GameScene', {
-            selectedCharacter: chosenKey,
+            playerName: this.playerName,
             levelId: 1,
             startTimer: true
         });

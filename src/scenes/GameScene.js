@@ -130,7 +130,10 @@ export default class GameScene extends Phaser.Scene {
     }
 
     init(data) {
-        this.selectedCharacter = data.selectedCharacter;
+        this.selectedCharacter = this.registry.get('selectedCharacter')
+        || PLAYER_CONFIGS[0].key;
+        this.config = PLAYER_CONFIGS.find(p => p.key === this.selectedCharacter);
+
         this.playerName = data.playerName;
         this.levelId = data.levelId || 1; // ✅ Move this up first
         this.levelConfig = LEVEL_CONFIGS.find(l => l.id === this.levelId); // now safe
@@ -158,8 +161,9 @@ export default class GameScene extends Phaser.Scene {
 
     create() {
         const { width, height } = this.sys.game.config;
-        const config = PLAYER_CONFIGS.find(p => p.key === this.selectedCharacter);
         this.isPaused = false;
+
+        console.log(this.selectedCharacter);
 
         const soundVolume = this.registry.get('soundVolume');
 
@@ -194,9 +198,9 @@ export default class GameScene extends Phaser.Scene {
                 this.resetStats();
 
                 // 🏁 Start fresh from Level 1
-                this.scene.stop();
+                this.scene.stop('GameScene');
                 this.scene.start('GameScene', {
-                    selectedCharacter: this.selectedCharacter,
+                    playerName: this.playerName,
                     levelId: this.levelId,
                     startTimer: true
                 });
@@ -209,7 +213,8 @@ export default class GameScene extends Phaser.Scene {
                 if (this.clickSound) this.clickSound.play();
                 pauseOverlay.style.display = 'none';
                 this.resetStats();
-                this.scene.stop();
+                this.registry.remove('selectedCharacter');
+                this.scene.stop('GameScene');
                 this.scene.start('StartScene');
             });
             homeBtn.hasClickListener = true;
@@ -482,11 +487,11 @@ export default class GameScene extends Phaser.Scene {
         this.obstacles = this.physics.add.group();
 
         // ✅ Character
-        this.runner = this.physics.add.sprite(width * config.x, 0, config.key);
+        this.runner = this.physics.add.sprite(width * this.config.x, 0, this.config.key);
         this.jumpCount = 0; // for double jump
 
-        const fw = config.frameWidth;   // actual displayed width
-        const fh = config.frameHeight;  // actual displayed height
+        const fw = this.config.frameWidth;
+        const fh = this.config.frameHeight;
 
         //Picking the hitbox as 75% of the full size:
         const hbW = Math.round(fw * 0.75);
@@ -502,25 +507,34 @@ export default class GameScene extends Phaser.Scene {
         this.runner.body.setSize(hbW, hbH);
         this.runner.body.setOffset(offX, offY);
 
-        this.runner.setScale(config.scale);
+        this.runner.setScale(this.config.scale);
         this.runner.setOrigin(0.5, 1);
         this.runner.body.allowGravity = true;
         this.runner.setCollideWorldBounds(true);
-        this.runner.setGravityY(600); // default is 0 
+        this.runner.setGravityY(600); // default is 0
 
         this.runner.setDepth(10);
 
-        this.anims.create({
-            key: 'run',
-            frames: this.anims.generateFrameNumbers(config.key, {
-                start: 0,
-                end: config.frames - 1
-            }),
-            frameRate: 10,
-            repeat: -1
-        });
+        // Create a unique animation key for the selected character
+        // We're using the character's key (e.g., 'runner1', 'runner2')
+        // to make the animation key unique (e.g., 'runner1_run', 'runner2_run')
+        const animKey = `${this.config.key}_run`;
 
-        this.runner.anims.play('run', true);
+        // Check if the animation already exists (optional, but good practice
+        // to prevent Phaser warnings if GameScene is restarted multiple times
+        // without a full page refresh)
+        if (!this.anims.get(animKey)) {
+            this.anims.create({
+                key: animKey, // Use the unique key here
+                frames: this.anims.generateFrameNumbers(this.config.key, {
+                    start: 0,
+                    end: this.config.frames - 1
+                }),
+                frameRate: 10,
+                repeat: -1
+            });
+        }
+        this.runner.anims.play(animKey, true); // Play the unique animation
 
         // ✅ Ground
         const ground = this.add.rectangle(0, 470, width, 20, 0x000000, 0).setOrigin(0, 0);
@@ -968,6 +982,7 @@ export default class GameScene extends Phaser.Scene {
 
         // Home Button
         createButton('HOME', width / 2 + 70, height * 0.55, () => {
+            this.registry.remove('selectedCharacter');
             this.resetStats();
             this.scene.stop();
             this.scene.start('StartScene');

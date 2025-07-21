@@ -1,8 +1,8 @@
 // Import necessary scenes
 import BootScene from './scenes/BootScene.js';
+import CharacterSelectScene from './scenes/CharacterSelectScene.js';
 import GameScene from './scenes/GameScene.js';
 import StartScene from './scenes/StartScene.js';
-import CharacterSelectScene from './scenes/CharacterSelectScene.js';
 
 // Game configuration
 const config = {
@@ -10,7 +10,12 @@ const config = {
     width: 800,        // Game width
     height: 600,       // Game height
     parent: 'game-container', // ID of the DOM element to add the game canvas to
-    scene: [BootScene, StartScene, CharacterSelectScene, GameScene],
+    scene: [           // Array of scenes to load. The first scene in the array is started first.
+        BootScene,
+        StartScene,
+        CharacterSelectScene,
+        GameScene
+    ],
     physics: {
         default: 'arcade', // Use Arcade Physics
         arcade: {
