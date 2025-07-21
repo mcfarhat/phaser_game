@@ -134,6 +134,9 @@ export default class GameScene extends Phaser.Scene {
         this.playerName = data.playerName;
         this.levelId = data.levelId || 1; // ✅ Move this up first
         this.levelConfig = LEVEL_CONFIGS.find(l => l.id === this.levelId); // now safe
+        this.calorieBurnPerSecond = this.levelConfig.calorieBurnPerSecond || 0;
+        this.calorieBurnPerJump = this.levelConfig.calorieBurnPerJump || 0;
+
 
         if (data.startTimer) {
             this.levelDuration = this.levelConfig.duration;
@@ -160,6 +163,10 @@ export default class GameScene extends Phaser.Scene {
   }
 
 }
+updateCaloriesText() {
+    this.caloriesText.setText('CALORIES: ' + Math.floor(this.calories));
+}
+
 
 
 
@@ -634,11 +641,15 @@ this.background.setScale(width / bg.width, height / bg.height);
         }
 
         if (Phaser.Input.Keyboard.JustDown(this.spacebar)) {
-        if (this.jumpCount < 2) {
-            this.runner.setVelocityY(-jumpHeight);
-            this.jumpCount++;
-        }
+    if (this.jumpCount < 2) {
+        this.runner.setVelocityY(-jumpHeight);
+        this.jumpCount++;
+
+        // 👟 Burn calories for each jump
+        this.calories -= this.calorieBurnPerJump;
+      
     }
+}
 
 
         // ✅ Cleanup
@@ -650,8 +661,13 @@ this.background.setScale(width / bg.width, height / bg.height);
         });
 
         const deltaSeconds = delta / 1000;
+        this.calories -= this.calorieBurnPerSecond * deltaSeconds;
+
+
         this.distance += this.gameSpeed * deltaSeconds / 10;
-        this.caloriesText.setText('CALORIES: ' + this.calories );
+        this.updateCaloriesText();
+
+
         this.scoreText.setText('SCORE: ' + this.score);
         this.distanceText.setText('DISTANCE: ' + Math.floor(this.distance) + ' m');
         
@@ -775,7 +791,8 @@ this.background.setScale(width / bg.width, height / bg.height);
         this.calories += data.calories;
 
         this.scoreText.setText('SCORE: ' + this.score);
-        this.caloriesText.setText('CALORIES: ' + this.calories);
+        this.updateCaloriesText();
+
 
         item.destroy();
     }
@@ -790,7 +807,8 @@ this.background.setScale(width / bg.width, height / bg.height);
         this.calories += data.calories;
 
         this.scoreText.setText('SCORE: ' + this.score);
-        this.caloriesText.setText('CALORIES: ' + this.calories);
+        this.updateCaloriesText();
+
 
         item.destroy();
     }
