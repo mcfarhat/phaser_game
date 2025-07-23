@@ -54,6 +54,24 @@ export default class CharacterSelectScene extends Phaser.Scene {
       .setScale(1)
       .setDepth(1); // Set an initial texture in showCharacter
 
+    this.padlockIcon = this.add.image(width / 2, height / 2 , 'padlock')
+        .setScale(0.1) // Adjust scale as needed
+        .setOrigin(0.5)
+        .setDepth(2) // Higher depth so it's on top of the character
+        .setVisible(false); // Start invisible
+
+    // Unlock requirement text (initially invisible)
+    this.unlockText = this.add.text(width / 2, height * 0.75, '', {
+        fontSize: '24px',
+        fill: '#FFD700', // Gold color for unlock text
+        fontFamily: 'Luckiest Guy',
+        stroke: '#000',
+        strokeThickness: 3,
+        align: 'center',
+        wordWrap: { width: width * 0.7 } // Wrap long text
+    }).setOrigin(0.5).setResolution(3)
+      .setVisible(false); // Start invisible
+
     // 4. Arrow controls with enhanced styling and hover effects
     const arrowStyle = {
       fontSize: '72px', // Larger arrows
@@ -125,6 +143,7 @@ export default class CharacterSelectScene extends Phaser.Scene {
       selectButtonBg.fillStyle(buttonHoverColor, 1);
       selectButtonBg.fillRoundedRect(-100, -30, 200, 60, 15);
       this.input.setDefaultCursor('pointer');
+      this.selectButton.setScale(1.1);
     });
 
     this.selectButton.on('pointerout', () => {
@@ -132,22 +151,12 @@ export default class CharacterSelectScene extends Phaser.Scene {
       selectButtonBg.fillStyle(buttonNormalColor, 1);
       selectButtonBg.fillRoundedRect(-100, -30, 200, 60, 15);
       this.input.setDefaultCursor('default');
+      this.selectButton.setScale(1);
     });
 
     this.selectButton.on('pointerdown', () => {
       if (this.clickSound) this.clickSound.play();
       this.confirmSelection();
-    });
-
-    // Add pulsating animation to the select button
-    this.tweens.add({
-      targets: this.selectButton,
-      scaleX: 1.05,
-      scaleY: 1.05,
-      yoyo: true,
-      repeat: -1,
-      ease: 'Sine.easeInOut',
-      duration: 800
     });
 
     // 6. Finally, show the first character
@@ -156,6 +165,7 @@ export default class CharacterSelectScene extends Phaser.Scene {
 
     showCharacter(index) {
         const cfg = PLAYER_CONFIGS[index];
+        const { width, height } = this.sys.game.config;
 
         // Set the texture of the sprite
         this.characterSprite.setTexture(cfg.key);
@@ -187,6 +197,43 @@ export default class CharacterSelectScene extends Phaser.Scene {
             });
         }
         this.characterSprite.anims.play(animKey, true);
+
+        const playerHighScore = parseInt(localStorage.getItem('highScore') || '0'); // Get player's high score
+        const playerMaxLevel = parseInt(localStorage.getItem('maxLevelReached') || '1'); // Get player's max level
+
+        let isLocked = false;
+        let unlockMessage = '';
+
+        if (cfg.unlockedBy && Object.keys(cfg.unlockedBy).length > 0) { // Check if 'unlockedBy' is defined and not empty
+            if (cfg.unlockedBy.type === 'score') {
+                if (playerHighScore < cfg.unlockedBy.value) {
+                    isLocked = true;
+                    unlockMessage = `REACH ${cfg.unlockedBy.value} SCORE TO UNLOCK`;
+                }
+            } else if (cfg.unlockedBy.type === 'level') {
+                if (playerMaxLevel < cfg.unlockedBy.value) {
+                    isLocked = true;
+                    unlockMessage = `COMPLETE LEVEL ${cfg.unlockedBy.value} TO UNLOCK`;
+                }
+            }
+        }
+        // else: if unlockedBy is empty, it's unlocked by default (like runner1)
+
+
+        // Adjust UI based on locked status
+        if (isLocked) {
+            this.characterSprite.setTint(0x555555); // Dim the character
+            this.padlockIcon.setVisible(true); // Show padlock
+            this.unlockText.setText(unlockMessage).setVisible(true); // Show unlock message
+            this.selectButton.setAlpha(0.5); // Dim select button
+            this.selectButton.disableInteractive(); // Disable interaction
+        } else {
+            this.characterSprite.clearTint(); // Remove tint
+            this.padlockIcon.setVisible(false); // Hide padlock
+            this.unlockText.setVisible(false); // Hide unlock message
+            this.selectButton.setAlpha(1); // Restore full opacity
+            this.selectButton.setInteractive({ useHandCursor: true }); // Enable interaction
+        }
     }
 
     showPrevious() {

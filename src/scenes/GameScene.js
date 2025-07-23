@@ -931,7 +931,16 @@ this.background.setScale(width / bg.width, height / bg.height);
         this.time.delayedCall(200, async () => {
             const playerName = localStorage.getItem('playerName');
             await submitScore(playerName, this.score, this.calories);
-            await showLeaderboardUI();
+
+            // Existing high score from localStorage (or 0 if none)
+            const currentHighScore = parseInt(localStorage.getItem('highScore') || '0');
+            // Check if current game's score is higher than the saved high score
+            if (this.score > currentHighScore) {
+                localStorage.setItem('highScore', this.score.toString());
+                console.log(`New High Score: ${this.score}`); // For debugging
+            }
+
+            await showLeaderboardUI(); 
         });
         
         // Common button function
@@ -1032,7 +1041,14 @@ this.background.setScale(width / bg.width, height / bg.height);
             this.levelCompleteSound.setVolume(this.registry.get('soundVolume'));
             this.levelCompleteSound.play();
         }
-        
+
+        const currentMaxLevel = parseInt(localStorage.getItem('maxLevelReached') || '1');
+        // Check if current level completed is higher than the saved max level
+        if (this.levelId > currentMaxLevel) {
+            localStorage.setItem('maxLevelReached', this.levelId.toString());
+            console.log(`New Max Level Reached: ${this.levelId}`); // For debugging
+        }
+
         this.showLevelCompleteScreen();
     }
 
