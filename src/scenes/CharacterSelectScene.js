@@ -21,56 +21,172 @@ export default class CharacterSelectScene extends Phaser.Scene {
   create() {
     const { width, height } = this.sys.game.config;
 
+    // Add background
+    this.add.image(width / 2, height / 2, 'char-bg').setDisplaySize(width, height);
+
+    // Add a title
+    this.add.text(width / 2, height * 0.15, 'SELECT YOUR RUNNER', {
+      fontSize: '48px',
+      fill: '#fff',
+      fontFamily: 'Luckiest Guy', // Assuming you have this font loaded
+      stroke: '#729C97',
+      strokeThickness: 6,
+      shadow: {
+        offsetX: 2,
+        offsetY: 2,
+        color: '#000',
+        blur: 8,
+        stroke: true,
+        fill: true
+      }
+    }).setOrigin(0.5).setResolution(3);
+
+    // Click sound
+    this.clickSound = this.sound.get('click-sound') || this.sound.add('click-sound', {
+      volume: this.registry.get('soundVolume') ?? 0.5
+    });
+
     // 1. Track which character is showing
     this.currentIndex = 0;
 
-    // 2. Pre-create sprite & text placeholders
-    this.characterSprite = this.add.image(width/2, height/2 - 50, '')
-        .setScale(1)
-        .setDepth(1);
+    // 2. Character Sprite (now a Phaser.GameObjects.Sprite for animation)
+    this.characterSprite = this.add.sprite(width / 2, height / 2 - 50, '')
+      .setScale(1)
+      .setDepth(1); // Set an initial texture in showCharacter
 
-    this.characterLabel = this.add.text(width/2, height/2 + 60, '', {
-        fontSize: '24px', fontFamily: 'Arial', fill: '#fff', fontStyle: 'bold'
-    }).setOrigin(0.5);
+    // 4. Arrow controls with enhanced styling and hover effects
+    const arrowStyle = {
+      fontSize: '72px', // Larger arrows
+      fill: '#729C97', // Match button color
+      fontFamily: 'Luckiest Guy',
+      stroke: '#000',
+      strokeThickness: 8,
+      shadow: {
+        offsetX: 2,
+        offsetY: 2,
+        color: '#000',
+        blur: 5,
+        stroke: true,
+        fill: true
+      }
+    };
 
-    // 3. Arrow controls
-    this.leftArrow = this.add.text(width*0.25, height/2, '<', { 
-        fontSize: '48px', fill: '#fff'
-        })
-        .setOrigin(0.5)
-        .setInteractive({ useHandCursor: true })
-        .on('pointerdown', () => this.showPrevious());
+    this.leftArrow = this.add.text(width * 0.25, height / 2, '<', arrowStyle)
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true })
+      .on('pointerdown', () => {
+        if (this.clickSound) this.clickSound.play();
+        this.showPrevious();
+      })
+      .on('pointerover', () => this.leftArrow.setStyle({ fill: '#7AAFBA' })) // Hover effect
+      .on('pointerout', () => this.leftArrow.setStyle({ fill: '#729C97' }));
 
-    this.rightArrow = this.add.text(width*0.75, height/2, '>', { 
-        fontSize: '48px', fill: '#fff'
-        })
-        .setOrigin(0.5)
-        .setInteractive({ useHandCursor: true })
-        .on('pointerdown', () => this.showNext());
+    this.rightArrow = this.add.text(width * 0.75, height / 2, '>', arrowStyle)
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true })
+      .on('pointerdown', () => {
+        if (this.clickSound) this.clickSound.play();
+        this.showNext();
+      })
+      .on('pointerover', () => this.rightArrow.setStyle({ fill: '#7AAFBA' })) // Hover effect
+      .on('pointerout', () => this.rightArrow.setStyle({ fill: '#729C97' }));
 
-    // 4. Select button
-    this.selectButton = this.add.text(width/2, height*0.8, 'SELECT', {
-        fontSize: '32px',
-        fill: '#fff',
-        fontFamily: 'Luckiest Guy',
-        backgroundColor: '#729C97',
-        padding: { x: 20, y: 10 },
-        borderRadius: 10,
-        align: 'center'
-        })
-        .setOrigin(0.5)
-        .setInteractive({ useHandCursor: true })
-        .on('pointerdown', () => this.confirmSelection());
+    // 5. Select button with hover effect and pulsating animation
+    const buttonNormalColor = 0x729C97;
+    const buttonHoverColor = 0x7AAFBA;
 
-    // 5. Finally, show the first character
+    // Create a graphics object for the button background
+    const selectButtonBg = this.add.graphics();
+    selectButtonBg.fillStyle(buttonNormalColor, 1);
+    selectButtonBg.fillRoundedRect(-100, -30, 200, 60, 15); // Adjust size for padding
+
+    // Create text for the button
+    const selectButtonText = this.add.text(0, 0, 'SELECT', {
+      fontSize: '32px',
+      fill: '#fff',
+      fontFamily: 'Luckiest Guy',
+      shadow: {
+        offsetX: 1,
+        offsetY: 1,
+        color: '#000',
+        blur: 8,
+        stroke: true,
+        fill: true
+      }
+    }).setOrigin(0.5).setResolution(3);
+
+    // Create a container for the button (background + text)
+    this.selectButton = this.add.container(width / 2, height * 0.85, [selectButtonBg, selectButtonText]);
+    this.selectButton.setSize(200, 60); // Set container size for interactivity
+    this.selectButton.setInteractive({ useHandCursor: true });
+
+    this.selectButton.on('pointerover', () => {
+      selectButtonBg.clear();
+      selectButtonBg.fillStyle(buttonHoverColor, 1);
+      selectButtonBg.fillRoundedRect(-100, -30, 200, 60, 15);
+      this.input.setDefaultCursor('pointer');
+    });
+
+    this.selectButton.on('pointerout', () => {
+      selectButtonBg.clear();
+      selectButtonBg.fillStyle(buttonNormalColor, 1);
+      selectButtonBg.fillRoundedRect(-100, -30, 200, 60, 15);
+      this.input.setDefaultCursor('default');
+    });
+
+    this.selectButton.on('pointerdown', () => {
+      if (this.clickSound) this.clickSound.play();
+      this.confirmSelection();
+    });
+
+    // Add pulsating animation to the select button
+    this.tweens.add({
+      targets: this.selectButton,
+      scaleX: 1.05,
+      scaleY: 1.05,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+      duration: 800
+    });
+
+    // 6. Finally, show the first character
     this.showCharacter(this.currentIndex);
     }
 
     showCharacter(index) {
         const cfg = PLAYER_CONFIGS[index];
+
+        // Set the texture of the sprite
         this.characterSprite.setTexture(cfg.key);
+
+        // Adjust scale
         this.characterSprite.setScale(cfg.scale || 1);
-        this.characterLabel.setText(cfg.label);
+
+        // Position the sprite (adjust Y based on character's actual height)
+        // A common strategy is to make characters stand on a "ground" line
+        // Assuming a ground line around height/2 + 50
+        const spriteDisplayHeight = cfg.frameHeight * cfg.scale;
+        this.characterSprite.y = this.sys.game.config.height / 2 + 20 ;
+        this.characterSprite.x = this.sys.game.config.width * (cfg.x + 0.28);
+
+
+        // Create and play animation dynamically
+        const animKey = `${cfg.key}_idle_select`; // Unique key for select scene animation
+
+        // Ensure the animation is created only once
+        if (!this.anims.get(animKey)) {
+            this.anims.create({
+                key: animKey,
+                frames: this.anims.generateFrameNumbers(cfg.key, {
+                    start: 0,
+                    end: cfg.frames - 1
+                }),
+                frameRate: 8, // Slower frame rate for idle animation on select screen
+                repeat: -1
+            });
+        }
+        this.characterSprite.anims.play(animKey, true);
     }
 
     showPrevious() {

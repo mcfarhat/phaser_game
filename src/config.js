@@ -7,7 +7,8 @@ export const PLAYER_CONFIGS = [
     scale: 1.1,
     x: 0.2,
     y: 125,
-    frames: 4
+    frames: 4,
+    unlockedBy: {},
   },
   {
     key: 'runner2',
@@ -17,7 +18,8 @@ export const PLAYER_CONFIGS = [
     scale: 3.5,
     x: 0.2,
     y: 135,
-    frames: 6
+    frames: 6,
+    unlockedBy: { type: 'score', value: 30 },
   },
   {
     key: 'runner3',
@@ -27,7 +29,8 @@ export const PLAYER_CONFIGS = [
     scale: 0.55,
     x: 0.3,
     y: 110,
-    frames: 8
+    frames: 8,
+    unlockedBy: { type: 'level', value: 3 },
   },
   {
     key: 'runner4',
@@ -37,7 +40,8 @@ export const PLAYER_CONFIGS = [
     scale: 1.3,
     x: 0.2,
     y: 100,
-    frames: 8
+    frames: 8,
+    unlockedBy: { type: 'score', value: 50 },
   },
   {
     key: 'runner5',
@@ -47,7 +51,8 @@ export const PLAYER_CONFIGS = [
     scale: 0.9,
     x: 0.15,
     y: 120,
-    frames: 8
+    frames: 8,
+    unlockedBy: { type: 'level', value: 5 },
   },
   {
     key: 'runner6',
@@ -57,7 +62,8 @@ export const PLAYER_CONFIGS = [
     scale: 1.1,
     x: 0.2,
     y: 100,
-    frames: 8
+    frames: 8,
+    unlockedBy: { type: 'score', value: 70 },
   },
   {
     key: 'runner7',
@@ -67,7 +73,8 @@ export const PLAYER_CONFIGS = [
     scale: 0.65,
     x: 0.2,
     y: 125,
-    frames: 8
+    frames: 8,
+    unlockedBy: { type: 'level', value: 7 },
   },
   {
     key: 'runner8',
@@ -77,7 +84,8 @@ export const PLAYER_CONFIGS = [
     scale: 1.2,
     x: 0.2,
     y: 115,
-    frames: 8
+    frames: 8,
+    unlockedBy: { type: 'score', value: 90 },
   },
   {
     key: 'runner9',
@@ -87,7 +95,8 @@ export const PLAYER_CONFIGS = [
     scale: 2.3,
     x: 0.2,
     y: 130,
-    frames: 6
+    frames: 6,
+    unlockedBy: { type: 'level', value: 9 },
   },
   {
     key: 'runner10',
@@ -97,7 +106,8 @@ export const PLAYER_CONFIGS = [
     scale: 2,
     x: 0.2,
     y: 115,
-    frames: 6
+    frames: 6,
+    unlockedBy: { type: 'score', value: 100 },
   }
 ];
 
@@ -235,6 +245,10 @@ export const LEVEL_CONFIGS = [
     obstacleFrequency: 5000,
     spawnRange: [150, 300],
     label: 'Level 1',
+    background: 'background1',
+    calorieBurnPerSecond: 1.0,
+    calorieBurnPerJump: 5,
+    
   },
   {
     id: 2,
@@ -245,6 +259,10 @@ export const LEVEL_CONFIGS = [
     obstacleFrequency: 4800,
     spawnRange: [150, 290],
     label: 'Level 2',
+    background: 'background2',
+    calorieBurnPerSecond: 1.5,
+    calorieBurnPerJump: 5,
+    
   },
   {
     id: 3,
@@ -255,6 +273,11 @@ export const LEVEL_CONFIGS = [
     obstacleFrequency: 4600,
     spawnRange: [150, 280],
     label: 'Level 3',
+    background: 'background3',
+    calorieBurnPerSecond: 2.0,
+    calorieBurnPerJump: 5,
+    
+
   },
   {
     id: 4,
@@ -265,6 +288,10 @@ export const LEVEL_CONFIGS = [
     obstacleFrequency: 4400,
     spawnRange: [145, 270],
     label: 'Level 4',
+    background: 'background4',
+    calorieBurnPerSecond: 2.5,
+    calorieBurnPerJump: 5,
+   
   },
   {
     id: 5,
@@ -275,6 +302,10 @@ export const LEVEL_CONFIGS = [
     obstacleFrequency: 4200,
     spawnRange: [145, 260],
     label: 'Level 5',
+    background: 'background5',
+    calorieBurnPerSecond: 3.0,
+    calorieBurnPerJump: 5,
+    
   },
   {
     id: 6,
@@ -285,6 +316,10 @@ export const LEVEL_CONFIGS = [
     obstacleFrequency: 4000,
     spawnRange: [140, 250],
     label: 'Level 6',
+    background: 'background6',
+    calorieBurnPerSecond: 3.5,
+    calorieBurnPerJump: 5,
+    
   },
   {
     id: 7,
@@ -295,6 +330,10 @@ export const LEVEL_CONFIGS = [
     obstacleFrequency: 3800,
     spawnRange: [135, 240],
     label: 'Level 7',
+    background: 'background7',
+    calorieBurnPerSecond: 4.0,
+    calorieBurnPerJump: 5,
+   
   },
   {
     id: 8,
@@ -305,6 +344,10 @@ export const LEVEL_CONFIGS = [
     obstacleFrequency: 3600,
     spawnRange: [130, 230],
     label: 'Level 8',
+    background: 'background8',
+    calorieBurnPerSecond: 4.5,
+    calorieBurnPerJump: 5,
+    
   },
   {
     id: 9,
@@ -315,6 +358,10 @@ export const LEVEL_CONFIGS = [
     obstacleFrequency: 3400,
     spawnRange: [125, 220],
     label: 'Level 9',
+    background: 'background9',
+    calorieBurnPerSecond: 5.0,
+    calorieBurnPerJump: 5,
+  
   },
   {
     id: 10,
@@ -325,5 +372,9 @@ export const LEVEL_CONFIGS = [
     obstacleFrequency: 3200,
     spawnRange: [120, 210],
     label: 'Level 10',
+    background: 'background10',
+    calorieBurnPerSecond: 5.5,
+    calorieBurnPerJump: 5,
+   
   }
 ];

@@ -63,6 +63,7 @@ export default class BootScene extends Phaser.Scene {
         });
 
         this.load.image('start-bg', 'assets/start-background.jpg');
+        this.load.image('char-bg', 'assets/backgrounds/character-selection-bg3.png');
         this.load.audio('start-sound', 'assets/sounds/music.mp3');
         this.load.audio('click-sound', 'assets/sounds/click.mp3');
 
