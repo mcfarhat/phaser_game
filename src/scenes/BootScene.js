@@ -4,7 +4,6 @@ import { PLAYER_CONFIGS } from '../config.js';
 export default class BootScene extends Phaser.Scene {
     constructor() {
         super({ key: 'BootScene' });
-        this.selectedCharacter = 'runner9';
     }
 
     preload() {
@@ -64,6 +63,7 @@ export default class BootScene extends Phaser.Scene {
         });
 
         this.load.image('start-bg', 'assets/start-background.jpg');
+        this.load.image('char-bg', 'assets/backgrounds/character-selection-bg3.png');
         this.load.audio('start-sound', 'assets/sounds/music.mp3');
         this.load.audio('click-sound', 'assets/sounds/click.mp3');
 
@@ -81,10 +81,11 @@ export default class BootScene extends Phaser.Scene {
         this.load.image('trophy-icon', 'assets/icons/trophy.svg');
         this.load.image('settings-icon', 'assets/icons/settings.svg');
         this.load.image('pause-icon', 'assets/icons/pause.svg');
+        this.load.image('padlock', 'assets/icons/padlock.png');
         this.load.audio('game-over', 'assets/sounds/game-over.mp3');
-         this.load.audio('hit-sound', 'assets/sounds/hit.mp3');
-         this.load.audio('level-complete', 'assets/sounds/level-complete.mp3');
-         this.load.audio('collect-item', 'assets/sounds/collect.mp3');
+        this.load.audio('hit-sound', 'assets/sounds/hit.mp3');
+        this.load.audio('level-complete', 'assets/sounds/level-complete.mp3');
+        this.load.audio('collect-item', 'assets/sounds/collect.mp3');
     }
 
     create() {
@@ -111,6 +112,6 @@ export default class BootScene extends Phaser.Scene {
             volume: soundVolume
         });
 
-        this.scene.start('StartScene', { selectedCharacter: this.selectedCharacter });
+        this.scene.start('StartScene');
     }
 }
