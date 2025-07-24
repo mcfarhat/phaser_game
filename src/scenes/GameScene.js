@@ -157,6 +157,8 @@ export default class GameScene extends Phaser.Scene {
 
     
     preload() {
+    this.load.image('heart', 'assets/icons/heart.svg');
+    
   // Dynamically load backgrounds from 1 to 10
   for (let i = 1; i <= 10; i++) {
     this.load.image(`background${i}`, `assets/backgrounds/background${i}.png`);
@@ -500,6 +502,9 @@ this.background.setScale(width / bg.width, height / bg.height);
         this.powerUps = this.physics.add.group();
         this.hazards = this.physics.add.group();
         this.obstacles = this.physics.add.group();
+        this.extraHearts = this.physics.add.group();
+
+
 
         // ✅ Character
         this.runner = this.physics.add.sprite(width * config.x, 0, config.key);
@@ -559,6 +564,9 @@ this.background.setScale(width / bg.width, height / bg.height);
         // Junk food (hazards)
         this.physics.add.overlap(this.runner, this.hazards, this.collectHazard, null, this);
 
+        this.physics.add.overlap(this.runner, this.extraHearts, this.collectExtraHeart, null, this);
+
+
         // Obstacle collision (deduct life)
         this.physics.add.collider(this.runner, this.obstacles, this.hitObstacle, null, this);
 
@@ -575,6 +583,25 @@ this.background.setScale(width / bg.width, height / bg.height);
             loop: true,
             callback: () => { if (!this.isPaused) this.spawnHazard(); }
         });
+if (this.levelConfig.extraHeartSpawnRange) {
+    const [min, max] = this.levelConfig.extraHeartSpawnRange;
+
+    const scheduleExtraHeart = () => {
+        const delay = Phaser.Math.Between(min, max);
+        console.log(`Next heart in ${delay / 1000}s`); // Debug log
+
+        this.time.delayedCall(delay, () => {
+            if (!this.levelEnded && !this.isPaused) {
+                console.log('Spawning extra heart'); // Debug log
+                this.spawnExtraHeart();
+                scheduleExtraHeart(); // Schedule the next one
+            }
+        });
+    };
+
+    scheduleExtraHeart(); // Start spawning hearts
+}
+
 
         this.clickSound = this.sound.get('click-sound') || this.sound.add('click-sound', {
             volume: this.registry.get('soundVolume') ?? 0.5
@@ -618,9 +645,6 @@ this.background.setScale(width / bg.width, height / bg.height);
             return;
             }
         }
-
-
-
         if (this.isPaused) return;
 
         this.background.tilePositionX += this.gameSpeed;
@@ -685,6 +709,11 @@ this.background.setScale(width / bg.width, height / bg.height);
         this.powerUpTimer.paused = pause;
         this.hazardTimer.paused = pause;
         this.motivationTimer.paused = pause;
+        if (this.extraHeartTimer && !this.extraHeartTimer.hasDispatched) {
+    this.extraHeartTimer.paused = pause;
+}
+
+
     
         if (pause) {
             this.runner.anims.pause();
@@ -765,6 +794,20 @@ this.background.setScale(width / bg.width, height / bg.height);
         this.lastSpawnedItemX = currentX;
         this.lastSpawnedItemY = y;
     }
+spawnExtraHeart() {
+    const currentX = this.sys.game.config.width + 50;
+    const y = Phaser.Math.Between(...this.itemSpawnHeightRange) - 50;
+
+    const heart = this.extraHearts.create(currentX, y, 'heart');
+    heart.setVelocityX(-this.gameSpeed * 50);
+    heart.setDisplaySize(60, 60);
+    heart.body.allowGravity = false;
+    heart.setImmovable(true);
+}
+
+
+
+
 
     spawnObstacle() {
         const key = Phaser.Utils.Array.GetRandom(obstacleTypes);
@@ -812,6 +855,27 @@ this.background.setScale(width / bg.width, height / bg.height);
 
         item.destroy();
     }
+collectExtraHeart(player, heart) {
+    if (this.lives < 3) {
+        this.lives++;
+
+        
+        const heartIcon = this.hearts[this.lives - 1];
+        if (heartIcon) {
+            heartIcon.setVisible(true);
+            heartIcon.setScale(0.04);
+            heartIcon.setAlpha(1);
+        }
+
+        if (this.collectItemSound && this.registry.get('soundEnabled')) {
+            this.collectItemSound.setVolume(this.registry.get('soundVolume')).play();
+        }
+    }
+
+    heart.destroy();
+}
+
+
 
     hitObstacle(player, obstacle) {
         this.playHitFeedback();
@@ -865,6 +929,10 @@ this.background.setScale(width / bg.width, height / bg.height);
 
     gameOver() {
         this.togglePause(true);
+         // 🛠 Cancel extra heart timer
+    if (this.extraHeartTimer) {
+        this.extraHeartTimer.remove(false);
+    }
 
         const soundEnabled = this.registry.get('soundEnabled') ?? true;
         const soundVolume = this.registry.get('soundVolume');
@@ -1008,6 +1076,10 @@ this.background.setScale(width / bg.width, height / bg.height);
     levelCompleted() {
         this.levelEnded = true;
         this.togglePause(true);
+         // 🛠️ CANCEL any leftover heart timer
+    if (this.extraHeartTimer) {
+        this.extraHeartTimer.remove(false);
+    }
         
         // Stop player movement and animation
         this.runner.setVelocity(0);
