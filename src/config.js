@@ -19,7 +19,7 @@ export const PLAYER_CONFIGS = [
     x: 0.2,
     y: 135,
     frames: 6,
-    unlockedBy: { type: 'score', value: 30 }
+    unlockedBy: { type: 'score', value: 10 }
   },
   {
     key: 'runner3',
