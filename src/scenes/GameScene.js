@@ -150,10 +150,14 @@ export default class GameScene extends Phaser.Scene {
     }
 
     init(data) {
-        this.selectedCharacter = data.selectedCharacter;
+        this.selectedCharacter = this.registry.get('selectedCharacter')
+        || PLAYER_CONFIGS[0].key;
+        this.config = PLAYER_CONFIGS.find(p => p.key === this.selectedCharacter);
+
         this.playerName = data.playerName;
         this.levelId = data.levelId || 1; // ✅ Move this up first
         this.levelConfig = LEVEL_CONFIGS.find(l => l.id === this.levelId); // now safe
+          this.registry.set('level', this.levelId);
         this.calorieBurnPerSecond = this.levelConfig.calorieBurnPerSecond || 0;
         this.calorieBurnPerJump = this.levelConfig.calorieBurnPerJump || 0;
 
@@ -184,8 +188,9 @@ export default class GameScene extends Phaser.Scene {
 
     create() {
         const { width, height } = this.sys.game.config;
-        const config = PLAYER_CONFIGS.find(p => p.key === this.selectedCharacter);
         this.isPaused = false;
+
+        console.log(this.selectedCharacter);
 
         const soundVolume = this.registry.get('soundVolume');
 
@@ -220,9 +225,9 @@ export default class GameScene extends Phaser.Scene {
                 this.resetStats();
 
                 // 🏁 Start fresh from Level 1
-                this.scene.stop();
+                this.scene.stop('GameScene');
                 this.scene.start('GameScene', {
-                    selectedCharacter: this.selectedCharacter,
+                    playerName: this.playerName,
                     levelId: this.levelId,
                     startTimer: true
                 });
@@ -235,7 +240,8 @@ export default class GameScene extends Phaser.Scene {
                 if (this.clickSound) this.clickSound.play();
                 pauseOverlay.style.display = 'none';
                 this.resetStats();
-                this.scene.stop();
+                this.registry.remove('selectedCharacter');
+                this.scene.stop('GameScene');
                 this.scene.start('StartScene');
             });
             homeBtn.hasClickListener = true;
@@ -514,11 +520,11 @@ export default class GameScene extends Phaser.Scene {
         this.obstacles = this.physics.add.group();
 
         // ✅ Character
-        this.runner = this.physics.add.sprite(width * config.x, 0, config.key);
+        this.runner = this.physics.add.sprite(width * this.config.x, 0, this.config.key);
         this.jumpCount = 0; // for double jump
 
-        const fw = config.frameWidth;   // actual displayed width
-        const fh = config.frameHeight;  // actual displayed height
+        const fw = this.config.frameWidth;
+        const fh = this.config.frameHeight;
 
         //Picking the hitbox as 75% of the full size:
         const hbW = Math.round(fw * 0.75);
@@ -534,25 +540,34 @@ export default class GameScene extends Phaser.Scene {
         this.runner.body.setSize(hbW, hbH);
         this.runner.body.setOffset(offX, offY);
 
-        this.runner.setScale(config.scale);
+        this.runner.setScale(this.config.scale);
         this.runner.setOrigin(0.5, 1);
         this.runner.body.allowGravity = true;
         this.runner.setCollideWorldBounds(true);
-        this.runner.setGravityY(600); // default is 0 
+        this.runner.setGravityY(600); // default is 0
 
         this.runner.setDepth(10);
 
-        this.anims.create({
-            key: 'run',
-            frames: this.anims.generateFrameNumbers(config.key, {
-                start: 0,
-                end: config.frames - 1
-            }),
-            frameRate: 10,
-            repeat: -1
-        });
+        // Create a unique animation key for the selected character
+        // We're using the character's key (e.g., 'runner1', 'runner2')
+        // to make the animation key unique (e.g., 'runner1_run', 'runner2_run')
+        const animKey = `${this.config.key}_run`;
 
-        this.runner.anims.play('run', true);
+        // Check if the animation already exists (optional, but good practice
+        // to prevent Phaser warnings if GameScene is restarted multiple times
+        // without a full page refresh)
+        if (!this.anims.get(animKey)) {
+            this.anims.create({
+                key: animKey, // Use the unique key here
+                frames: this.anims.generateFrameNumbers(this.config.key, {
+                    start: 0,
+                    end: this.config.frames - 1
+                }),
+                frameRate: 10,
+                repeat: -1
+            });
+        }
+        this.runner.anims.play(animKey, true); // Play the unique animation
 
         // ✅ Ground
         const ground = this.add.rectangle(0, 470, width, 20, 0x000000, 0).setOrigin(0, 0);
@@ -601,6 +616,19 @@ export default class GameScene extends Phaser.Scene {
         if (this.shouldStartTimer) {
             this.time.delayedCall(0, () => this.startTimer());
         }
+
+        const playerStats = {
+            highScore: this.score,  // or load from localStorage if needed
+            levelReached: this.registry.get('level') || 1
+        };
+
+        PLAYER_CONFIGS.forEach(character => {
+            if (character.key === 'runner1') return;
+            if (isUnlocked(character, playerStats) && !alreadyUnlocked(character.key)) {
+            markAsUnlocked(character.key);
+            this.showCharacterUnlockPopup(character);
+            }
+        });
     }
 
     update(time, delta) {
@@ -719,15 +747,17 @@ export default class GameScene extends Phaser.Scene {
                 hazard.body.setVelocityX(hazard.originalVelocity);
             }
         });
-        
-        this.hazards.getChildren().forEach(hazard => {
-            if (pause) {
-                hazard.originalVelocity = hazard.body.velocity.x;
-                hazard.body.setVelocityX(0);
-            } else if (hazard.originalVelocity !== undefined) {
-                hazard.body.setVelocityX(hazard.originalVelocity);
-            }
-        });
+
+        if (this.obstacles) {
+            this.obstacles.getChildren().forEach(obstacle => {
+                if (pause) {
+                    obstacle.originalVelocity = obstacle.body.velocity.x;
+                    obstacle.body.setVelocityX(0);
+                } else if (obstacle.originalVelocity !== undefined) {
+                    obstacle.body.setVelocityX(obstacle.originalVelocity);
+                }
+            });
+        }
 
         this.pauseButton.disableInteractive();
         if (!pause) {
@@ -810,18 +840,18 @@ export default class GameScene extends Phaser.Scene {
         this.calories += data.calories;
 
         this.scoreText.setText('SCORE: ' + this.score);
-const playerStats = {
-  highScore: this.score,
-  levelReached: this.registry.get('level') || 1
-};
+        const playerStats = {
+        highScore: this.score,
+        levelReached: this.registry.get('level') || 1
+        };
 
-PLAYER_CONFIGS.forEach(character => {
-    if (character.key === 'runner1') return; 
-    if (isUnlocked(character, playerStats) && !alreadyUnlocked(character.key)) {
-        markAsUnlocked(character.key);
-        this.showCharacterUnlockPopup(character);
-    }
-});
+        PLAYER_CONFIGS.forEach(character => {
+            if (character.key === 'runner1') return; 
+            if (isUnlocked(character, playerStats) && !alreadyUnlocked(character.key)) {
+                markAsUnlocked(character.key);
+                this.showCharacterUnlockPopup(character);
+            }
+        });
         this.updateCaloriesText();
 
 
@@ -839,111 +869,109 @@ PLAYER_CONFIGS.forEach(character => {
 
         this.scoreText.setText('SCORE: ' + this.score);
         const playerStats = {
-  highScore: this.score,
-  levelReached: this.registry.get('level') || 1
-};
+        highScore: this.score,
+        levelReached: this.registry.get('level') || 1
+        };
 
-PLAYER_CONFIGS.forEach(character => {
-    if (character.key === 'runner1') return; 
-    if (isUnlocked(character, playerStats) && !alreadyUnlocked(character.key)) {
-        markAsUnlocked(character.key);
-        this.showCharacterUnlockPopup(character);
-    }
-});
+        PLAYER_CONFIGS.forEach(character => {
+            if (character.key === 'runner1') return; 
+            if (isUnlocked(character, playerStats) && !alreadyUnlocked(character.key)) {
+                markAsUnlocked(character.key);
+                this.showCharacterUnlockPopup(character);
+            }
+        });
         this.updateCaloriesText();
 
 
         item.destroy();
     }
     
-showCharacterUnlockPopup(character) {
+    showCharacterUnlockPopup(character) {
 
-    this.togglePause(true);
-  // Play sound
-  this.sound.play('new-character', {
-    volume: this.registry.get('soundVolume')
-  });
+        this.togglePause(true);
+        // Play sound
+        this.sound.play('new-character', {
+            volume: this.registry.get('soundVolume')
+        });
 
-  const reason = character.unlockedBy;
-  const { width, height } = this.sys.game.canvas;
+        const reason = character.unlockedBy;
+        const { width, height } = this.sys.game.canvas;
 
-  const overlay = this.add.rectangle(0, 0, width, height, 0x000000, 0.7)
-    .setOrigin(0)
-    .setDepth(999);
+        const overlay = this.add.rectangle(0, 0, width, height, 0x000000, 0.7)
+            .setOrigin(0)
+            .setDepth(999);
 
-  const title = this.add.text(width / 2, 100, 'Character Unlocked', {
-    fontSize: '42px',
-    fontFamily: 'Luckiest Guy',
-    color: '#E0F7FA',
-    stroke: '#729C97',
-    strokeThickness: 8,
-    shadow: {
-        offsetX: 1,
-        offsetY: 1,
-        color: '#000',
-        blur: 8,
-        stroke: true,
-        fill: true
+        const title = this.add.text(width / 2, 100, 'Character Unlocked', {
+            fontSize: '42px',
+            fontFamily: 'Luckiest Guy',
+            color: '#E0F7FA',
+            stroke: '#729C97',
+            strokeThickness: 8,
+            shadow: {
+                offsetX: 1,
+                offsetY: 1,
+                color: '#000',
+                blur: 8,
+                stroke: true,
+                fill: true
+            }
+        }).setOrigin(0.5).setDepth(1000);
+
+            this.tweens.add({
+                targets: title,
+                scale: { from: 1.1, to: 1.2 },
+                duration: 1500,
+                yoyo: true,
+                repeat: -1,
+                ease: 'Sine.easeInOut'
+            });
+
+
+        const sprite = this.add.sprite(width / 2, height / 2 - 30, character.key)
+            .setScale(character.scale)
+            .setDepth(1000);
+
+        if (!this.anims.exists(`${character.key}_run`)) {
+            this.anims.create({
+            key: `${character.key}_run`,
+            frames: this.anims.generateFrameNumbers(character.key, { start: 0, end: character.frames - 1 }),
+            frameRate: 10,
+            repeat: -1
+            });
+        }
+
+        sprite.play(`${character.key}_run`);
+
+        const reasonText = reason.type === 'score'
+            ? `You reached a score of ${reason.value}`
+            : `You reached level ${reason.value}`;
+
+        const message = this.add.text(width / 2, height / 2 + 140,
+            `${character.key.toUpperCase()} is now available!\n${reasonText}`, {
+            fontSize: '25px',
+            fontFamily: 'Luckiest Guy',
+            color: '#729C97',
+            letterSpacing: 1.5,
+            align: 'center'
+            }).setOrigin(0.5).setDepth(1000);
+
+        const hint = this.add.text(width / 2, height - 40, 'Click to continue', {
+            fontSize: '18px',
+            fontFamily: 'Luckiest Guy',
+            letterSpacing: 1.5,
+            color: '#ccc'
+        }).setOrigin(0.5).setDepth(1000);
+
+        this.input.once('pointerdown', () => {
+            this.togglePause(false);
+            overlay.destroy();
+            title.destroy();
+            sprite.destroy();
+            message.destroy();
+            hint.destroy();
+
+        }, this);
     }
-  }).setOrigin(0.5).setDepth(1000);
-
-    this.tweens.add({
-        targets: title,
-        scale: { from: 1.1, to: 1.2 },
-        duration: 1500,
-        yoyo: true,
-        repeat: -1,
-        ease: 'Sine.easeInOut'
-    });
-
-
-  const sprite = this.add.sprite(width / 2, height / 2 - 30, character.key)
-    .setScale(character.scale)
-    .setDepth(1000);
-
-  if (!this.anims.exists(`${character.key}_run`)) {
-    this.anims.create({
-      key: `${character.key}_run`,
-      frames: this.anims.generateFrameNumbers(character.key, { start: 0, end: character.frames - 1 }),
-      frameRate: 10,
-      repeat: -1
-    });
-  }
-
-  sprite.play(`${character.key}_run`);
-
-  const reasonText = reason.type === 'score'
-    ? `You reached a score of ${reason.value}`
-    : `You reached level ${reason.value}`;
-
-  const message = this.add.text(width / 2, height / 2 + 140,
-    `${character.key.toUpperCase()} is now available!\n${reasonText}`, {
-      fontSize: '25px',
-      fontFamily: 'Luckiest Guy',
-      color: '#729C97',
-      letterSpacing: 1.5,
-      align: 'center'
-    }).setOrigin(0.5).setDepth(1000);
-
-  const hint = this.add.text(width / 2, height - 40, 'Click to continue', {
-    fontSize: '18px',
-    fontFamily: 'Luckiest Guy',
-    letterSpacing: 1.5,
-    color: '#ccc'
-  }).setOrigin(0.5).setDepth(1000);
-
-  this.input.once('pointerdown', () => {
-    this.togglePause(false);
-    overlay.destroy();
-    title.destroy();
-    sprite.destroy();
-    message.destroy();
-    hint.destroy();
-    buttonBg.destroy();
-    buttonText.destroy();
-
-  }, this);
-}
 
     hitObstacle(player, obstacle) {
         this.playHitFeedback();
@@ -1049,7 +1077,16 @@ showCharacterUnlockPopup(character) {
         this.time.delayedCall(200, async () => {
             const playerName = localStorage.getItem('playerName');
             await submitScore(playerName, this.score, this.calories);
-            await showLeaderboardUI();
+
+            // Existing high score from localStorage (or 0 if none)
+            const currentHighScore = parseInt(localStorage.getItem('highScore') || '0');
+            // Check if current game's score is higher than the saved high score
+            if (this.score > currentHighScore) {
+                localStorage.setItem('highScore', this.score.toString());
+                console.log(`New High Score: ${this.score}`); // For debugging
+            }
+
+            await showLeaderboardUI(); 
         });
         
         // Common button function
@@ -1131,6 +1168,7 @@ showCharacterUnlockPopup(character) {
 
         // Home Button
         createButton('HOME', width / 2 + 70, height * 0.50, () => {
+            this.registry.remove('selectedCharacter');
             this.resetStats();
             this.scene.stop();
             this.scene.start('StartScene');
@@ -1149,7 +1187,14 @@ showCharacterUnlockPopup(character) {
             this.levelCompleteSound.setVolume(this.registry.get('soundVolume'));
             this.levelCompleteSound.play();
         }
-        
+
+        const currentMaxLevel = parseInt(localStorage.getItem('maxLevelReached') || '1');
+        // Check if current level completed is higher than the saved max level
+        if (this.levelId > currentMaxLevel) {
+            localStorage.setItem('maxLevelReached', this.levelId.toString());
+            console.log(`New Max Level Reached: ${this.levelId}`); // For debugging
+        }
+
         this.showLevelCompleteScreen();
     }
 
@@ -1204,7 +1249,7 @@ showCharacterUnlockPopup(character) {
         },
         { 
             label: 'CALORIES: ', 
-            value: this.calories,
+            value: Math.floor(this.calories),
             color: '#FFD166' // Yellow for calories
         },
         { 
@@ -1306,6 +1351,11 @@ showCharacterUnlockPopup(character) {
         if (this.clickSound) this.clickSound.play();
 
         const nextLevelId = (this.levelId || 1) + 1;
+
+        const previousMax = parseInt(localStorage.getItem('maxLevelReached') || '1', 10);
+        if (nextLevelId > previousMax) {
+            localStorage.setItem('maxLevelReached', nextLevelId);
+        }
 
         this.scene.start('GameScene', {
             selectedCharacter: this.selectedCharacter,

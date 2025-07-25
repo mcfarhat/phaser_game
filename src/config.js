@@ -8,7 +8,7 @@ export const PLAYER_CONFIGS = [
     x: 0.2,
     y: 125,
     frames: 4,
-    unlockedBy: {}
+    unlockedBy: {},
   },
   {
     key: 'runner2',
@@ -19,7 +19,7 @@ export const PLAYER_CONFIGS = [
     x: 0.2,
     y: 135,
     frames: 6,
-    unlockedBy: { type: 'score', value: 10 }
+    unlockedBy: { type: 'score', value: 30 },
   },
   {
     key: 'runner3',
@@ -30,7 +30,7 @@ export const PLAYER_CONFIGS = [
     x: 0.3,
     y: 110,
     frames: 8,
-    unlockedBy: { type: 'level', value: 3 }
+    unlockedBy: { type: 'level', value: 3 },
   },
   {
     key: 'runner4',
@@ -41,7 +41,7 @@ export const PLAYER_CONFIGS = [
     x: 0.2,
     y: 100,
     frames: 8,
-    unlockedBy: { type: 'score', value: 50 }
+    unlockedBy: { type: 'score', value: 50 },
   },
   {
     key: 'runner5',
@@ -52,7 +52,7 @@ export const PLAYER_CONFIGS = [
     x: 0.15,
     y: 120,
     frames: 8,
-    unlockedBy: { type: 'level', value: 5 }
+    unlockedBy: { type: 'level', value: 5 },
   },
   {
     key: 'runner6',
@@ -63,7 +63,7 @@ export const PLAYER_CONFIGS = [
     x: 0.2,
     y: 100,
     frames: 8,
-    unlockedBy: { type: 'score', value: 70 }
+    unlockedBy: { type: 'score', value: 70 },
   },
   {
     key: 'runner7',
@@ -74,7 +74,7 @@ export const PLAYER_CONFIGS = [
     x: 0.2,
     y: 125,
     frames: 8,
-    unlockedBy: { type: 'level', value: 7 }
+    unlockedBy: { type: 'level', value: 7 },
   },
   {
     key: 'runner8',
@@ -85,7 +85,7 @@ export const PLAYER_CONFIGS = [
     x: 0.2,
     y: 115,
     frames: 8,
-    unlockedBy: { type: 'score', value: 90 }
+    unlockedBy: { type: 'score', value: 90 },
   },
   {
     key: 'runner9',
@@ -96,7 +96,7 @@ export const PLAYER_CONFIGS = [
     x: 0.2,
     y: 130,
     frames: 6,
-    unlockedBy: { type: 'level', value: 9 }
+    unlockedBy: { type: 'level', value: 9 },
   },
   {
     key: 'runner10',
@@ -107,7 +107,7 @@ export const PLAYER_CONFIGS = [
     x: 0.2,
     y: 115,
     frames: 6,
-    unlockedBy: { type: 'score', value: 100 }
+    unlockedBy: { type: 'score', value: 100 },
   }
 ];
 

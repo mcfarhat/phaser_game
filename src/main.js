@@ -1,5 +1,6 @@
 // Import necessary scenes
 import BootScene from './scenes/BootScene.js';
+import CharacterSelectScene from './scenes/CharacterSelectScene.js';
 import GameScene from './scenes/GameScene.js';
 import StartScene from './scenes/StartScene.js';
 
@@ -12,6 +13,7 @@ const config = {
     scene: [           // Array of scenes to load. The first scene in the array is started first.
         BootScene,
         StartScene,
+        CharacterSelectScene,
         GameScene
     ],
     physics: {
