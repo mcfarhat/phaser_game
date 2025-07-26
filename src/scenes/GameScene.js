@@ -139,6 +139,26 @@ function markAsUnlocked(key) {
   }
 }
 
+function checkAndUnlockCharacters(score, level, showPopupCallback) {
+  const playerStats = {
+    highScore: score,
+    levelReached: level
+  };
+
+  PLAYER_CONFIGS.forEach(character => {
+    if (!character.unlockedBy || Object.keys(character.unlockedBy).length === 0) {
+      return;
+    }
+    if (isUnlocked(character, playerStats) && !alreadyUnlocked(character.key)) {
+      markAsUnlocked(character.key);
+      if (typeof showPopupCallback === 'function') {
+        showPopupCallback(character);
+      }
+    }
+  });
+}
+
+
 export default class GameScene extends Phaser.Scene {
     constructor() {
         super({ key: 'GameScene' });
@@ -617,18 +637,12 @@ export default class GameScene extends Phaser.Scene {
             this.time.delayedCall(0, () => this.startTimer());
         }
 
-        const playerStats = {
-            highScore: this.score,  // or load from localStorage if needed
-            levelReached: this.registry.get('level') || 1
-        };
+        checkAndUnlockCharacters(
+            this.score,
+            this.registry.get('level') || 1,
+            (character) => this.showCharacterUnlockPopup(character)
+        );
 
-        PLAYER_CONFIGS.forEach(character => {
-            if (character.key === 'runner1') return;
-            if (isUnlocked(character, playerStats) && !alreadyUnlocked(character.key)) {
-            markAsUnlocked(character.key);
-            this.showCharacterUnlockPopup(character);
-            }
-        });
     }
 
     update(time, delta) {
@@ -840,18 +854,11 @@ export default class GameScene extends Phaser.Scene {
         this.calories += data.calories;
 
         this.scoreText.setText('SCORE: ' + this.score);
-        const playerStats = {
-        highScore: this.score,
-        levelReached: this.registry.get('level') || 1
-        };
-
-        PLAYER_CONFIGS.forEach(character => {
-            if (character.key === 'runner1') return; 
-            if (isUnlocked(character, playerStats) && !alreadyUnlocked(character.key)) {
-                markAsUnlocked(character.key);
-                this.showCharacterUnlockPopup(character);
-            }
-        });
+        checkAndUnlockCharacters(
+            this.score,
+            this.registry.get('level') || 1,
+            (character) => this.showCharacterUnlockPopup(character)
+        );
         this.updateCaloriesText();
 
 
@@ -868,18 +875,11 @@ export default class GameScene extends Phaser.Scene {
         this.calories += data.calories;
 
         this.scoreText.setText('SCORE: ' + this.score);
-        const playerStats = {
-        highScore: this.score,
-        levelReached: this.registry.get('level') || 1
-        };
-
-        PLAYER_CONFIGS.forEach(character => {
-            if (character.key === 'runner1') return; 
-            if (isUnlocked(character, playerStats) && !alreadyUnlocked(character.key)) {
-                markAsUnlocked(character.key);
-                this.showCharacterUnlockPopup(character);
-            }
-        });
+        checkAndUnlockCharacters(
+            this.score,
+            this.registry.get('level') || 1,
+            (character) => this.showCharacterUnlockPopup(character)
+        );
         this.updateCaloriesText();
 
 
