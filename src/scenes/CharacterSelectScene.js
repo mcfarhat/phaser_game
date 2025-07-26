@@ -7,6 +7,7 @@ export default class CharacterSelectScene extends Phaser.Scene {
 
   init(data){
     this.playerName = data.playerName;
+    this.selectedCharacter = data.selectedCharacter;
   }
 
   preload() {
@@ -199,7 +200,7 @@ export default class CharacterSelectScene extends Phaser.Scene {
         this.characterSprite.anims.play(animKey, true);
 
         const playerHighScore = parseInt(localStorage.getItem('highScore') || '0'); // Get player's high score
-        const playerMaxLevel = parseInt(localStorage.getItem('maxLevelReached') || '1'); // Get player's max level
+        const playerMaxLevel = parseInt(localStorage.getItem('maxLevelReached') || '1', 10);
 
         let isLocked = false;
         let unlockMessage = '';

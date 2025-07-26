@@ -27,7 +27,7 @@ async function submitScore(player_name, score, calories) {
                 {
                     player_name,
                     score: Math.max(score, existing?.score ?? 0),
-                    calories: Math.max(calories, existing?.calories ?? 0)
+                    calories: Math.max(Math.floor(calories), existing?.calories ?? 0)
                 }
             ], { onConflict: ['player_name'] });
 
@@ -118,6 +118,46 @@ export async function showLeaderboardUI() {
     await fetchAndDisplayLeaderboard();
 }
 
+function isUnlocked(character, stats) {
+  const condition = character.unlockedBy;
+  if (!condition || Object.keys(condition).length === 0) return true;
+  if (condition.type === 'score') return stats.highScore >= condition.value;
+  if (condition.type === 'level') return stats.levelReached >= condition.value;
+  return false;
+}
+
+function alreadyUnlocked(key) {
+  const unlocked = JSON.parse(localStorage.getItem('unlockedCharacters') || '[]');
+  return unlocked.includes(key);
+}
+
+function markAsUnlocked(key) {
+  const unlocked = JSON.parse(localStorage.getItem('unlockedCharacters') || '[]');
+  if (!unlocked.includes(key)) {
+    unlocked.push(key);
+    localStorage.setItem('unlockedCharacters', JSON.stringify(unlocked));
+  }
+}
+
+function checkAndUnlockCharacters(score, level, showPopupCallback) {
+  const playerStats = {
+    highScore: score,
+    levelReached: level
+  };
+
+  PLAYER_CONFIGS.forEach(character => {
+    if (!character.unlockedBy || Object.keys(character.unlockedBy).length === 0) {
+      return;
+    }
+    if (isUnlocked(character, playerStats) && !alreadyUnlocked(character.key)) {
+      markAsUnlocked(character.key);
+      if (typeof showPopupCallback === 'function') {
+        showPopupCallback(character);
+      }
+    }
+  });
+}
+
 
 export default class GameScene extends Phaser.Scene {
     constructor() {
@@ -137,6 +177,7 @@ export default class GameScene extends Phaser.Scene {
         this.playerName = data.playerName;
         this.levelId = data.levelId || 1; // ✅ Move this up first
         this.levelConfig = LEVEL_CONFIGS.find(l => l.id === this.levelId); // now safe
+          this.registry.set('level', this.levelId);
         this.calorieBurnPerSecond = this.levelConfig.calorieBurnPerSecond || 0;
         this.calorieBurnPerJump = this.levelConfig.calorieBurnPerJump || 0;
 
@@ -160,18 +201,10 @@ export default class GameScene extends Phaser.Scene {
 
     
     preload() {
-  // Dynamically load backgrounds from 1 to 10
-  for (let i = 1; i <= 10; i++) {
-    this.load.image(`background${i}`, `assets/backgrounds/background${i}.png`);
-  }
-
-}
-updateCaloriesText() {
-    this.caloriesText.setText('CALORIES: ' + Math.floor(this.calories));
-}
-
-
-
+    }
+    updateCaloriesText() {
+        this.caloriesText.setText('CALORIES: ' + Math.floor(this.calories));
+    }
 
     create() {
         const { width, height } = this.sys.game.config;
@@ -237,13 +270,13 @@ updateCaloriesText() {
         // Background
         const bgKey = this.levelConfig.background || 'background1';
 
-this.background = this.add.tileSprite(0, 0, 0, 0, bgKey)
-  .setOrigin(0)
-  .setScrollFactor(0)
-  .setDepth(-1);
+        this.background = this.add.tileSprite(0, 0, 0, 0, bgKey)
+        .setOrigin(0)
+        .setScrollFactor(0)
+        .setDepth(-1);
 
-const bg = this.textures.get(bgKey).getSourceImage();
-this.background.setScale(width / bg.width, height / bg.height);
+        const bg = this.textures.get(bgKey).getSourceImage();
+        this.background.setScale(width / bg.width, height / bg.height);
 
 
         const hudHeight = 40;        // total height of the stats bar
@@ -603,6 +636,13 @@ this.background.setScale(width / bg.width, height / bg.height);
         if (this.shouldStartTimer) {
             this.time.delayedCall(0, () => this.startTimer());
         }
+
+        checkAndUnlockCharacters(
+            this.score,
+            this.registry.get('level') || 1,
+            (character) => this.showCharacterUnlockPopup(character)
+        );
+
     }
 
     update(time, delta) {
@@ -664,8 +704,6 @@ this.background.setScale(width / bg.width, height / bg.height);
       
     }
 }
-
-
         // ✅ Cleanup
         this.powerUps.getChildren().forEach(item => {
             if (item.x < -item.width) item.destroy();
@@ -723,7 +761,18 @@ this.background.setScale(width / bg.width, height / bg.height);
                 hazard.body.setVelocityX(hazard.originalVelocity);
             }
         });
-    
+
+        if (this.obstacles) {
+            this.obstacles.getChildren().forEach(obstacle => {
+                if (pause) {
+                    obstacle.originalVelocity = obstacle.body.velocity.x;
+                    obstacle.body.setVelocityX(0);
+                } else if (obstacle.originalVelocity !== undefined) {
+                    obstacle.body.setVelocityX(obstacle.originalVelocity);
+                }
+            });
+        }
+
         this.pauseButton.disableInteractive();
         if (!pause) {
             this.pauseButton.setInteractive({ useHandCursor: true });
@@ -805,6 +854,11 @@ this.background.setScale(width / bg.width, height / bg.height);
         this.calories += data.calories;
 
         this.scoreText.setText('SCORE: ' + this.score);
+        checkAndUnlockCharacters(
+            this.score,
+            this.registry.get('level') || 1,
+            (character) => this.showCharacterUnlockPopup(character)
+        );
         this.updateCaloriesText();
 
 
@@ -821,10 +875,102 @@ this.background.setScale(width / bg.width, height / bg.height);
         this.calories += data.calories;
 
         this.scoreText.setText('SCORE: ' + this.score);
+        checkAndUnlockCharacters(
+            this.score,
+            this.registry.get('level') || 1,
+            (character) => this.showCharacterUnlockPopup(character)
+        );
         this.updateCaloriesText();
 
 
         item.destroy();
+    }
+    
+    showCharacterUnlockPopup(character) {
+
+        this.togglePause(true);
+        // Play sound
+        this.sound.play('new-character', {
+            volume: this.registry.get('soundVolume')
+        });
+
+        const reason = character.unlockedBy;
+        const { width, height } = this.sys.game.canvas;
+
+        const overlay = this.add.rectangle(0, 0, width, height, 0x000000, 0.7)
+            .setOrigin(0)
+            .setDepth(999);
+
+        const title = this.add.text(width / 2, 100, 'Character Unlocked', {
+            fontSize: '42px',
+            fontFamily: 'Luckiest Guy',
+            color: '#E0F7FA',
+            stroke: '#729C97',
+            strokeThickness: 8,
+            shadow: {
+                offsetX: 1,
+                offsetY: 1,
+                color: '#000',
+                blur: 8,
+                stroke: true,
+                fill: true
+            }
+        }).setOrigin(0.5).setDepth(1000);
+
+            this.tweens.add({
+                targets: title,
+                scale: { from: 1.1, to: 1.2 },
+                duration: 1500,
+                yoyo: true,
+                repeat: -1,
+                ease: 'Sine.easeInOut'
+            });
+
+
+        const sprite = this.add.sprite(width / 2, height / 2 - 30, character.key)
+            .setScale(character.scale)
+            .setDepth(1000);
+
+        if (!this.anims.exists(`${character.key}_run`)) {
+            this.anims.create({
+            key: `${character.key}_run`,
+            frames: this.anims.generateFrameNumbers(character.key, { start: 0, end: character.frames - 1 }),
+            frameRate: 10,
+            repeat: -1
+            });
+        }
+
+        sprite.play(`${character.key}_run`);
+
+        const reasonText = reason.type === 'score'
+            ? `You reached a score of ${reason.value}`
+            : `You reached level ${reason.value}`;
+
+        const message = this.add.text(width / 2, height / 2 + 140,
+            `${character.key.toUpperCase()} is now available!\n${reasonText}`, {
+            fontSize: '25px',
+            fontFamily: 'Luckiest Guy',
+            color: '#729C97',
+            letterSpacing: 1.5,
+            align: 'center'
+            }).setOrigin(0.5).setDepth(1000);
+
+        const hint = this.add.text(width / 2, height - 40, 'Click to continue', {
+            fontSize: '18px',
+            fontFamily: 'Luckiest Guy',
+            letterSpacing: 1.5,
+            color: '#ccc'
+        }).setOrigin(0.5).setDepth(1000);
+
+        this.input.once('pointerdown', () => {
+            this.togglePause(false);
+            overlay.destroy();
+            title.destroy();
+            sprite.destroy();
+            message.destroy();
+            hint.destroy();
+
+        }, this);
     }
 
     hitObstacle(player, obstacle) {
@@ -913,11 +1059,11 @@ this.background.setScale(width / bg.width, height / bg.height);
 
         // GAME OVER Text
         const gameOverText = this.add.text(width / 2, height * 0.35, 'GAME OVER', {
-            fontSize: '48px',
-            fill: '#fff',
+            fontSize: '52px',
             fontFamily: 'Luckiest Guy',
+            color: '#E0F7FA',
             stroke: '#729C97',
-            strokeThickness: 6,
+            strokeThickness: 8,
             shadow: {
                 offsetX: 1,
                 offsetY: 1,
@@ -1004,7 +1150,7 @@ this.background.setScale(width / bg.width, height / bg.height);
         };
 
         // Restart Button
-        createButton('RESTART', width / 2 - 70, height * 0.55, () => {
+        createButton('RESTART', width / 2 - 70, height * 0.50, () => {
             if (this.clickSound) this.clickSound.play();
 
             // 🔄 Reset all stats
@@ -1021,7 +1167,7 @@ this.background.setScale(width / bg.width, height / bg.height);
 
 
         // Home Button
-        createButton('HOME', width / 2 + 70, height * 0.55, () => {
+        createButton('HOME', width / 2 + 70, height * 0.50, () => {
             this.registry.remove('selectedCharacter');
             this.resetStats();
             this.scene.stop();
@@ -1205,6 +1351,11 @@ this.background.setScale(width / bg.width, height / bg.height);
         if (this.clickSound) this.clickSound.play();
 
         const nextLevelId = (this.levelId || 1) + 1;
+
+        const previousMax = parseInt(localStorage.getItem('maxLevelReached') || '1', 10);
+        if (nextLevelId > previousMax) {
+            localStorage.setItem('maxLevelReached', nextLevelId);
+        }
 
         this.scene.start('GameScene', {
             selectedCharacter: this.selectedCharacter,
