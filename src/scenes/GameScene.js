@@ -257,7 +257,8 @@ this.background.setScale(width / bg.width, height / bg.height);
         .setOrigin(0, 0)
         .setScrollFactor(0)
         .setDepth(50);
-
+        
+        this.extraHeartTimer = null;
         this.levelEnded = false;
         this.timerStarted = false;
 
