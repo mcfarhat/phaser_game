@@ -160,18 +160,15 @@ export default class GameScene extends Phaser.Scene {
 
     
     preload() {
-  // Dynamically load backgrounds from 1 to 10
-  for (let i = 1; i <= 10; i++) {
-    this.load.image(`background${i}`, `assets/backgrounds/background${i}.png`);
-  }
+        // Dynamically load backgrounds from 1 to 10
+        for (let i = 1; i <= 10; i++) {
+            this.load.image(`background${i}`, `assets/backgrounds/background${i}.png`);
+        }
+    }
 
-}
-updateCaloriesText() {
-    this.caloriesText.setText('CALORIES: ' + Math.floor(this.calories));
-}
-
-
-
+    updateCaloriesText() {
+        this.caloriesText.setText('CALORIES: ' + Math.floor(this.calories));
+    }
 
     create() {
         const { width, height } = this.sys.game.config;
@@ -237,13 +234,13 @@ updateCaloriesText() {
         // Background
         const bgKey = this.levelConfig.background || 'background1';
 
-this.background = this.add.tileSprite(0, 0, 0, 0, bgKey)
-  .setOrigin(0)
-  .setScrollFactor(0)
-  .setDepth(-1);
+        this.background = this.add.tileSprite(0, 0, 0, 0, bgKey)
+        .setOrigin(0)
+        .setScrollFactor(0)
+        .setDepth(-1);
 
-const bg = this.textures.get(bgKey).getSourceImage();
-this.background.setScale(width / bg.width, height / bg.height);
+        const bg = this.textures.get(bgKey).getSourceImage();
+        this.background.setScale(width / bg.width, height / bg.height);
 
 
         const hudHeight = 40;        // total height of the stats bar
@@ -350,6 +347,20 @@ this.background.setScale(width / bg.width, height / bg.height);
             document.getElementById('pauseOverlay').style.display = 'flex';
             this.togglePause(true);
         });
+
+        this.swapCharacterButton = this.add.image(width - 107, 18, 'swap-icon') // Preload 'swap_icon'
+            .setOrigin(0.5)
+            .setScale(0.04) // Adjust scale
+            .setInteractive({ useHandCursor: true })
+            .setScrollFactor(0)
+            .setDepth(100)
+            .on('pointerdown', () => {
+                if (!this.paused) { // Only allow swap if not already paused
+                    this.togglePause(true);
+
+                    this.showCharacterSwapOverlay(); // Call a new method to handle selection
+                }
+            });
 
         // SETTINGS button
         const settingsBtn = this.add.image(width - 10, 6, 'settings-icon')
@@ -1234,5 +1245,235 @@ this.background.setScale(width / bg.width, height / bg.height);
         this.registry.set('calories', 0);
         this.registry.set('distance', 0);
         this.registry.set('lives', 3);
+    }
+
+    showCharacterSwapOverlay() {
+        const { width, height } = this.sys.game.config;
+
+        // The main full-screen overlay rectangle
+        this.overlayRect = this.add.rectangle(0, 0, width, height, 0x000000, 0.9) // Black, 90% opaque
+            .setOrigin(0, 0) // Top-left origin
+            .setScrollFactor(0) // Fixed to camera
+            .setDepth(100) // Ensure it's on top of game elements
+            .setInteractive(); // Blocks input to game underneath
+
+        // Overlay Title
+        this.overlayTitle = this.add.text(width / 2, height * 0.1, 'CHANGE RUNNER', {
+            fontSize: '48px',
+            fill: '#fff',
+            fontFamily: 'Luckiest Guy',
+            stroke: '#729C97',
+            strokeThickness: 6
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(101);
+
+        // Character display
+        this.swapDisplayChar = this.add.sprite(width / 2, height * 0.5, '') // Centered horizontally, middle-ish vertically
+            .setScale(1)
+            .setOrigin(0.5, 1) // Character stands on this Y line
+            .setScrollFactor(0)
+            .setDepth(101);
+
+        // Character Label
+        this.swapCharLabel = this.add.text(width / 2, height * 0.7, '', {
+            fontSize: '32px',
+            fill: '#FFF',
+            fontFamily: 'Luckiest Guy'
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(101);
+
+        // Store the index of the currently playing character
+        const currentPlayerConfig = PLAYER_CONFIGS.find(p => p.key === this.registry.get('selectedCharacter'));
+        this.currentSwapIndex = PLAYER_CONFIGS.indexOf(currentPlayerConfig);
+
+        // Arrows to cycle characters
+        const arrowStyle = { fontSize: '72px', fill: '#729C97', fontFamily: 'Luckiest Guy' };
+        this.swapLeftArrow = this.add.text(width * 0.25, height * 0.45, '<', arrowStyle)
+            .setOrigin(0.5)
+            .setInteractive({ useHandCursor: true })
+            .setScrollFactor(0)
+            .setDepth(101)
+            .on('pointerdown', () => this.cycleSwapCharacter(-1));
+
+        this.swapRightArrow = this.add.text(width * 0.75, height * 0.45, '>', arrowStyle)
+            .setOrigin(0.5)
+            .setInteractive({ useHandCursor: true })
+            .setScrollFactor(0)
+            .setDepth(101)
+            .on('pointerdown', () => this.cycleSwapCharacter(1));
+
+        // Confirm Swap Button
+        this.confirmSwapButton = this.add.text(width / 2, height * 0.85, 'CONFIRM SWAP', {
+            fontSize: '32px',
+            fill: '#fff',
+            fontFamily: 'Luckiest Guy',
+            backgroundColor: '#4CAF50',
+            padding: { x: 20, y: 10 }
+        }).setOrigin(0.5)
+        .setInteractive({ useHandCursor: true })
+        .setScrollFactor(0)
+        .setDepth(101)
+        .on('pointerdown', () => this.confirmCharacterSwap());
+
+        // Cancel Swap Button
+        this.cancelSwapButton = this.add.text(width / 2, height * 0.95, 'CANCEL', {
+            fontSize: '24px',
+            fill: '#fff',
+            fontFamily: 'Luckiest Guy',
+            backgroundColor: '#FF5733',
+            padding: { x: 15, y: 8 }
+        }).setOrigin(0.5)
+        .setInteractive({ useHandCursor: true })
+        .setScrollFactor(0)
+        .setDepth(101)
+        .on('pointerdown', () => this.hideCharacterSwapOverlay());
+
+        // Call displaySwapCharacter to initially populate the character
+        this.displaySwapCharacter(this.currentSwapIndex);
+
+        // Pause the game using your comprehensive togglePause method
+        this.togglePause(true);
+    }
+
+    // --- ✨ NEW METHOD: Cycle through characters in overlay ✨ ---
+    cycleSwapCharacter(direction) {
+        this.currentSwapIndex = (this.currentSwapIndex + direction + PLAYER_CONFIGS.length) % PLAYER_CONFIGS.length;
+        this.displaySwapCharacter(this.currentSwapIndex);
+    }
+
+    // --- ✨ NEW METHOD: Display character in swap overlay (adjusted for full-screen) ✨ ---
+    displaySwapCharacter(index) {
+        const cfg = PLAYER_CONFIGS[index];
+        const { width, height } = this.sys.game.config;
+
+        this.swapDisplayChar.setTexture(cfg.key);
+        this.swapDisplayChar.setScale(cfg.scale || 1);
+        this.swapCharLabel.setText(cfg.label);
+        // Ensure character Y is correctly set based on full-screen layout
+        this.swapDisplayChar.y = height * 0.5;
+
+        // Dynamically create/play animation for the preview
+        const animKey = `${cfg.key}_idle_swap`; // Unique key for swap overlay
+        if (!this.anims.get(animKey)) {
+            this.anims.create({
+                key: animKey,
+                frames: this.anims.generateFrameNumbers(cfg.key, {
+                    start: 0,
+                    end: cfg.frames - 1
+                }),
+                frameRate: 8, // Slower for preview
+                repeat: -1
+            });
+        }
+        this.swapDisplayChar.anims.play(animKey, true);
+
+        // Handle locked status for the preview
+        const playerHighScore = parseInt(localStorage.getItem('highScore') || '0');
+        const playerMaxLevel = parseInt(localStorage.getItem('maxLevelReached') || '1');
+        let isLocked = false;
+        let unlockMessage = '';
+
+        if (cfg.unlockedBy && Object.keys(cfg.unlockedBy).length > 0) {
+            if (cfg.unlockedBy.type === 'score') {
+                if (playerHighScore < cfg.unlockedBy.value) {
+                    isLocked = true;
+                    unlockMessage = `REACH ${cfg.unlockedBy.value} SCORE TO UNLOCK`;
+                }
+            } else if (cfg.unlockedBy.type === 'level') {
+                if (playerMaxLevel < cfg.unlockedBy.value) {
+                    isLocked = true;
+                    unlockMessage = `COMPLETE LEVEL ${cfg.unlockedBy.value} TO UNLOCK`;
+                }
+            }
+        }
+
+        // Show lock icon and message on overlay if locked
+        if (isLocked) {
+            this.swapDisplayChar.setTint(0x555555); // Dim the character
+            if (!this.swapPadlockIcon) { // Create if not exists
+                // Position padlock relative to full screen (adjust Y if needed)
+                this.swapPadlockIcon = this.add.image(width / 2, height * 0.4, 'padlock') // Example Y position
+                    .setScale(0.1)
+                    .setOrigin(0.5)
+                    .setScrollFactor(0)
+                    .setDepth(102); // Higher depth than overlayRect
+            }
+            this.swapPadlockIcon.setVisible(true);
+
+            if (!this.swapUnlockText) { // Create if not exists
+                // Position unlock text relative to full screen (adjust Y if needed)
+                this.swapUnlockText = this.add.text(width / 2, height * 0.6, '', { // Example Y position
+                    fontSize: '20px', fill: '#FFD700', fontFamily: 'Luckiest Guy', align: 'center', wordWrap: { width: width * 0.8 }
+                }).setOrigin(0.5).setScrollFactor(0).setDepth(102);
+            }
+            this.swapUnlockText.setText(unlockMessage).setVisible(true);
+            this.confirmSwapButton.setAlpha(0.5).disableInteractive(); // Disable confirm if locked
+        } else {
+            this.swapDisplayChar.clearTint();
+            this.swapPadlockIcon?.setVisible(false); // Hide padlock if it exists
+            this.swapUnlockText?.setVisible(false); // Hide unlock text if it exists
+            this.confirmSwapButton.setAlpha(1).setInteractive({ useHandCursor: true });
+        }
+    }
+
+    // --- ✨ NEW METHOD: Confirm Character Swap ✨ ---
+    confirmCharacterSwap() {
+        const newCharConfig = PLAYER_CONFIGS[this.currentSwapIndex];
+
+        // 1. Update the selected character in registry
+        this.registry.set('selectedCharacter', newCharConfig.key);
+
+        // 2. Stop current player animation
+        this.runner.anims.stop();
+
+        // 3. Update player sprite texture
+        this.runner.setTexture(newCharConfig.key);
+
+        // 4. Update player scale
+        this.runner.setScale(newCharConfig.scale);
+
+        // 5. Update player hitbox (critical for new character)
+        const fw = newCharConfig.frameWidth;
+        const fh = newCharConfig.frameHeight;
+        const hbW = Math.round(fw * 0.75); // Using your existing hitbox logic
+        const hbH = Math.round(fh * 0.75);
+        const offX = Math.round((fw - hbW) / 2);
+        const offY = Math.round(fh - hbH);
+        this.runner.body.setSize(hbW, hbH);
+        this.runner.body.setOffset(offX, offY);
+
+        // 6. Create and play the new character's running animation
+        const animKey = `${newCharConfig.key}_run`; // Use the unique key for GameScene animation
+        if (!this.anims.get(animKey)) { // Only create if it doesn't exist
+            this.anims.create({
+                key: animKey,
+                frames: this.anims.generateFrameNumbers(newCharConfig.key, {
+                    start: 0,
+                    end: newCharConfig.frames - 1
+                }),
+                frameRate: 10,
+                repeat: -1
+            });
+        }
+        this.runner.anims.play(animKey, true);
+
+        // 7. Hide the overlay and resume game
+        this.hideCharacterSwapOverlay();
+    }
+
+    // --- ✨ NEW METHOD: Hide Overlay and Resume Game (adjusted for full-screen) ✨ ---
+    hideCharacterSwapOverlay() {
+        // Destroy all overlay elements
+        this.overlayRect.destroy();
+        this.overlayTitle.destroy();
+        this.swapDisplayChar.destroy();
+        this.swapCharLabel.destroy();
+        this.swapLeftArrow.destroy();
+        this.swapRightArrow.destroy();
+        this.confirmSwapButton.destroy();
+        this.cancelSwapButton.destroy();
+        this.swapPadlockIcon?.destroy(); // Destroy if it was created
+        this.swapUnlockText?.destroy(); // Destroy if it was created
+
+        // Resume game using your comprehensive togglePause method
+        this.togglePause(false);
     }
 }
