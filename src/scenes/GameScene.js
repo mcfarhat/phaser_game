@@ -733,41 +733,21 @@ if (this.levelConfig.extraHeartSpawnRange) {
 
     togglePause(pause) {
         this.isPaused = pause;
-    
-        this.physics.world.isPaused = pause;
+
+        this.physics.world.isPaused = pause; // This pauses/resumes all physics bodies automatically
         this.powerUpTimer.paused = pause;
         this.hazardTimer.paused = pause;
         this.motivationTimer.paused = pause;
         if (this.extraHeartTimer && !this.extraHeartTimer.hasDispatched) {
-    this.extraHeartTimer.paused = pause;
-}
+            this.extraHeartTimer.paused = pause;
+        }
 
-
-    
         if (pause) {
             this.runner.anims.pause();
         } else {
             this.runner.anims.resume();
         }
-    
-        this.powerUps.getChildren().forEach(powerUp => {
-            if (pause) {
-                powerUp.originalVelocity = powerUp.body.velocity.x;
-                powerUp.body.setVelocityX(0);
-            } else if (powerUp.originalVelocity !== undefined) {
-                powerUp.body.setVelocityX(powerUp.originalVelocity);
-            }
-        });
-    
-        this.hazards.getChildren().forEach(hazard => {
-            if (pause) {
-                hazard.originalVelocity = hazard.body.velocity.x;
-                hazard.body.setVelocityX(0);
-            } else if (hazard.originalVelocity !== undefined) {
-                hazard.body.setVelocityX(hazard.originalVelocity);
-            }
-        });
-    
+
         this.pauseButton.disableInteractive();
         if (!pause) {
             this.pauseButton.setInteractive({ useHandCursor: true });
@@ -1376,31 +1356,91 @@ collectExtraHeart(player, heart) {
             .setDepth(101)
             .on('pointerdown', () => this.cycleSwapCharacter(1));
 
-        // Confirm Swap Button
-        this.confirmSwapButton = this.add.text(width / 2, height * 0.85, 'CONFIRM SWAP', {
-            fontSize: '32px',
-            fill: '#fff',
-            fontFamily: 'Luckiest Guy',
-            backgroundColor: '#4CAF50',
-            padding: { x: 20, y: 10 }
-        }).setOrigin(0.5)
-        .setInteractive({ useHandCursor: true })
-        .setScrollFactor(0)
-        .setDepth(101)
-        .on('pointerdown', () => this.confirmCharacterSwap());
+        const makeButton = (x, y, w, h, radius, color, hoverColor, text, textStyle, onClick) => {
+            // 1) Draw the rounded rect
+            const bg = this.add.graphics();
+            bg.fillStyle(color, 1);
+            bg.fillRoundedRect(-w/2, -h/2, w, h, radius);
 
-        // Cancel Swap Button
-        this.cancelSwapButton = this.add.text(width / 2, height * 0.95, 'CANCEL', {
+            // 2) Create the label
+            const label = this.add.text(0, 0, text, textStyle).setOrigin(0.5);
+
+            // 3) Put in a container
+            const btn = this.add.container(x, y, [ bg, label ])
+                .setSize(w, h)
+                .setInteractive({ useHandCursor: true })
+                .setScrollFactor(0)
+                .setDepth(101);
+
+            // 4) Hover effects
+            btn.on('pointerover', () => {
+                // scale up
+                this.tweens.add({
+                    targets: btn,
+                    scaleX: 1.1,
+                    scaleY: 1.1,
+                    duration: 150,
+                    ease: 'Quad.easeOut'
+                });
+                // change bg color
+                bg.clear()
+                .fillStyle(hoverColor, 1)
+                .fillRoundedRect(-w/2, -h/2, w, h, radius);
+            });
+
+            btn.on('pointerout', () => {
+                // scale back
+                this.tweens.add({
+                    targets: btn,
+                    scaleX: 1,
+                    scaleY: 1,
+                    duration: 150,
+                    ease: 'Quad.easeOut'
+                });
+                // restore bg color
+                bg.clear()
+                .fillStyle(color, 1)
+                .fillRoundedRect(-w/2, -h/2, w, h, radius);
+            });
+
+            btn.on('pointerdown', onClick);
+
+            return btn;
+        };
+
+
+    // Confirm Swap
+    this.confirm = makeButton(
+        width/2, height*0.8,
+        240, 60,
+        15,
+        0x4CAF50,     // base color
+        0x388E3C,     // hover color (darker green)
+        'CONFIRM SWAP',
+        {
             fontSize: '24px',
             fill: '#fff',
-            fontFamily: 'Luckiest Guy',
-            backgroundColor: '#FF5733',
-            padding: { x: 15, y: 8 }
-        }).setOrigin(0.5)
-        .setInteractive({ useHandCursor: true })
-        .setScrollFactor(0)
-        .setDepth(101)
-        .on('pointerdown', () => this.hideCharacterSwapOverlay());
+            fontFamily: 'Luckiest Guy'
+        },
+        () => this.confirmCharacterSwap()
+    );
+
+    // Cancel Swap
+    this.cancel = makeButton(
+        width/2, height*0.9,
+        180, 50,
+        12,
+        0xFF5733,     // base color
+        0xC63D1F,     // hover color (darker orange)
+        'CANCEL',
+        {
+            fontSize: '20px',
+            fill: '#fff',
+            fontFamily: 'Luckiest Guy'
+        },
+        () => this.hideCharacterSwapOverlay()
+    );
+
 
         // Call displaySwapCharacter to initially populate the character
         this.displaySwapCharacter(this.currentSwapIndex);
@@ -1409,13 +1449,11 @@ collectExtraHeart(player, heart) {
         this.togglePause(true);
     }
 
-    // --- ✨ NEW METHOD: Cycle through characters in overlay ✨ ---
     cycleSwapCharacter(direction) {
         this.currentSwapIndex = (this.currentSwapIndex + direction + PLAYER_CONFIGS.length) % PLAYER_CONFIGS.length;
         this.displaySwapCharacter(this.currentSwapIndex);
     }
 
-    // --- ✨ NEW METHOD: Display character in swap overlay (adjusted for full-screen) ✨ ---
     displaySwapCharacter(index) {
         const cfg = PLAYER_CONFIGS[index];
         const { width, height } = this.sys.game.config;
@@ -1423,8 +1461,8 @@ collectExtraHeart(player, heart) {
         this.swapDisplayChar.setTexture(cfg.key);
         this.swapDisplayChar.setScale(cfg.scale || 1);
         this.swapCharLabel.setText(cfg.label);
-        // Ensure character Y is correctly set based on full-screen layout
-        this.swapDisplayChar.y = height * 0.5;
+        this.swapDisplayChar.y = height * 0.65;
+        this.swapDisplayChar.x = width * (cfg.x + 0.28);
 
         // Dynamically create/play animation for the preview
         const animKey = `${cfg.key}_idle_swap`; // Unique key for swap overlay
@@ -1465,8 +1503,8 @@ collectExtraHeart(player, heart) {
         if (isLocked) {
             this.swapDisplayChar.setTint(0x555555); // Dim the character
             if (!this.swapPadlockIcon) { // Create if not exists
-                // Position padlock relative to full screen (adjust Y if needed)
-                this.swapPadlockIcon = this.add.image(width / 2, height * 0.4, 'padlock') // Example Y position
+                // Position padlock relative to full screen 
+                this.swapPadlockIcon = this.add.image(width / 2, height * 0.45, 'padlock') 
                     .setScale(0.1)
                     .setOrigin(0.5)
                     .setScrollFactor(0)
@@ -1475,22 +1513,21 @@ collectExtraHeart(player, heart) {
             this.swapPadlockIcon.setVisible(true);
 
             if (!this.swapUnlockText) { // Create if not exists
-                // Position unlock text relative to full screen (adjust Y if needed)
-                this.swapUnlockText = this.add.text(width / 2, height * 0.6, '', { // Example Y position
+                // Position unlock text relative to full screen 
+                this.swapUnlockText = this.add.text(width / 2, height * 0.7, '', { 
                     fontSize: '20px', fill: '#FFD700', fontFamily: 'Luckiest Guy', align: 'center', wordWrap: { width: width * 0.8 }
                 }).setOrigin(0.5).setScrollFactor(0).setDepth(102);
             }
             this.swapUnlockText.setText(unlockMessage).setVisible(true);
-            this.confirmSwapButton.setAlpha(0.5).disableInteractive(); // Disable confirm if locked
+            this.confirm.setAlpha(0.5).disableInteractive(); // Disable confirm if locked
         } else {
             this.swapDisplayChar.clearTint();
             this.swapPadlockIcon?.setVisible(false); // Hide padlock if it exists
             this.swapUnlockText?.setVisible(false); // Hide unlock text if it exists
-            this.confirmSwapButton.setAlpha(1).setInteractive({ useHandCursor: true });
+            this.confirm.setAlpha(1).setInteractive({ useHandCursor: true });
         }
     }
 
-    // --- ✨ NEW METHOD: Confirm Character Swap ✨ ---
     confirmCharacterSwap() {
         const newCharConfig = PLAYER_CONFIGS[this.currentSwapIndex];
 
@@ -1535,7 +1572,6 @@ collectExtraHeart(player, heart) {
         this.hideCharacterSwapOverlay();
     }
 
-    // --- ✨ NEW METHOD: Hide Overlay and Resume Game (adjusted for full-screen) ✨ ---
     hideCharacterSwapOverlay() {
         // Destroy all overlay elements
         this.overlayRect.destroy();
@@ -1544,8 +1580,8 @@ collectExtraHeart(player, heart) {
         this.swapCharLabel.destroy();
         this.swapLeftArrow.destroy();
         this.swapRightArrow.destroy();
-        this.confirmSwapButton.destroy();
-        this.cancelSwapButton.destroy();
+        this.confirm.destroy();
+        this.cancel.destroy();
         this.swapPadlockIcon?.destroy(); // Destroy if it was created
         this.swapUnlockText?.destroy(); // Destroy if it was created
 
