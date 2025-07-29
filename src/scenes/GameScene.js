@@ -1014,7 +1014,7 @@ collectExtraHeart(player, heart) {
         
         // Common button function
         const createButton = (label, x, y, callback) => {
-            const btnWidth = 100;
+            const btnWidth = 120;
             const btnHeight = 45;
             const normalColor = 0x729C97;
             const hoverColor = 0x7AAFBA;
@@ -1024,10 +1024,11 @@ collectExtraHeart(player, heart) {
             buttonBg.fillRoundedRect(-btnWidth / 2, -btnHeight / 2, btnWidth, btnHeight, 15);
 
             const buttonText = this.add.text(0, 0, label, {
-                fontSize: '21px',
+                fontSize: '20px',
                 fill: '#fff',
                 fontFamily: 'Arial',
                 fontStyle: 'bold',
+                padding: { x: 6, y: 2 },
                 shadow: {
                     offsetX: 1,
                     offsetY: 1,
