@@ -926,8 +926,8 @@ export default class GameScene extends Phaser.Scene {
                 ease: 'Sine.easeInOut'
             });
 
-
-        const sprite = this.add.sprite(width / 2, height / 2 - 30, character.key)
+        const sprite = this.add.sprite(width / 2 - 40, height / 2 - 30, character.key)
+            .setOrigin(0.5)
             .setScale(character.scale)
             .setDepth(1000);
 
@@ -939,7 +939,7 @@ export default class GameScene extends Phaser.Scene {
             repeat: -1
             });
         }
-
+   
         sprite.play(`${character.key}_run`);
 
         const reasonText = reason.type === 'score'
@@ -961,6 +961,45 @@ export default class GameScene extends Phaser.Scene {
             letterSpacing: 1.5,
             color: '#ccc'
         }).setOrigin(0.5).setDepth(1000);
+
+        // Create "Select Character" button
+    const buttonBg = this.add.rectangle(width / 2, height / 2 + 220, 260, 60, 0x729C97)
+        .setOrigin(0.5)
+        .setDepth(1000)
+        .setInteractive({ useHandCursor: true });
+
+    const buttonText = this.add.text(width / 2, height / 2 + 220, 'Select Character', {
+        fontSize: '24px',
+        fontFamily: 'Luckiest Guy',
+        color: '#FFFFFF'
+    }).setOrigin(0.5).setDepth(1001);
+
+    const cleanUpPopup = () => {
+        overlay.destroy();
+        title.destroy();
+        sprite.destroy();
+        message.destroy();
+        hint.destroy();
+        buttonBg.destroy();
+        buttonText.destroy();
+    };
+
+    buttonBg.on('pointerdown', () => {
+        cleanUpPopup();
+        this.togglePause(false);
+
+        localStorage.setItem('selectedCharacter', character.key);
+
+        this.scene.start('CharacterSelectScene', { selectedCharacter: character.key });
+    });
+
+    this.input.once('pointerdown', (pointer) => {
+        // Avoid double-click conflict with button
+        if (!buttonBg.getBounds().contains(pointer.x, pointer.y)) {
+            cleanUpPopup();
+            this.togglePause(false);
+        }
+    });
 
         this.input.once('pointerdown', () => {
             this.togglePause(false);
@@ -1074,20 +1113,18 @@ export default class GameScene extends Phaser.Scene {
             }
         }).setOrigin(0.5).setResolution(3);
 
-        this.time.delayedCall(200, async () => {
+        (async () => {
             const playerName = localStorage.getItem('playerName');
             await submitScore(playerName, this.score, this.calories);
 
-            // Existing high score from localStorage (or 0 if none)
             const currentHighScore = parseInt(localStorage.getItem('highScore') || '0');
-            // Check if current game's score is higher than the saved high score
             if (this.score > currentHighScore) {
                 localStorage.setItem('highScore', this.score.toString());
-                console.log(`New High Score: ${this.score}`); // For debugging
+                console.log(`New High Score: ${this.score}`);
             }
 
-            await showLeaderboardUI(); 
-        });
+            await showLeaderboardUI();
+        })();
         
         // Common button function
         const createButton = (label, x, y, callback) => {

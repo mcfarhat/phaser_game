@@ -1,4 +1,4 @@
-//StartScene.js
+// StartScene.js
 import { supabase } from '../supabaseClient.js';
 import { showLeaderboardUI } from './GameScene.js';
 
@@ -169,8 +169,7 @@ export default class StartScene extends Phaser.Scene {
         this.startButton = this.add.container(btnX, btnY, [buttonBg, startText]);
         this.startButton.setSize(btnWidth, btnHeight);
         this.startButton.setInteractive();
-        this.startButton.disableInteractive();  // disables clicks
-
+        this.startButton.disableInteractive();  // disables clicks initially
 
         this.startButton.on('pointerover', () => {
             buttonBg.clear();
@@ -244,6 +243,50 @@ export default class StartScene extends Phaser.Scene {
 
     startGame() {
         this.startButton.setInteractive();
+    }
+
+    async loadPlayerNameFromSupabase() {
+        const telegramId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
+
+        if (!telegramId) {
+            console.warn('Telegram ID not found, falling back to localStorage');
+            this.useLocalStorageName();
+            return;
+        }
+
+        const { data, error } = await supabase
+            .from('leaderboard')
+            .select('player_name')
+            .eq('telegram_id', telegramId)
+            .single();
+
+        if (error || !data) {
+            this.createNameInput();
+        } else {
+            this.playerName = data.name;
+            this.displayWelcomeMessage(data.name);
+            this.startGame();
+        }
+    }
+
+    useLocalStorageName() {
+        const name = localStorage.getItem('playerName');
+        if (name) {
+            this.playerName = name;
+            this.displayWelcomeMessage(name);
+            this.startGame();
+        } else {
+            this.createNameInput();
+        }
+    }
+
+    displayWelcomeMessage(name) {
+        this.add.text(10, 7, `WELCOME, ${name}!`, {
+            fontFamily: 'Luckiest Guy',
+            fontSize: '20px',
+            fill: '#ffffff',
+            letterSpacing: '1.2px'
+        }).setDepth(60).setScrollFactor(0);
     }
 
     createNameInput() {
@@ -329,23 +372,54 @@ export default class StartScene extends Phaser.Scene {
         goButton.style.letterSpacing = '1px';
         goButton.style.marginTop = '15px';
 
-        goButton.addEventListener('click', async () => {
+        const telegramId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
+
+        const saveName = async () => {
             const val = this.nameInputElement.value.trim();
-            if (val.length > 0) {
-                localStorage.setItem('playerName', val);
-                this.playerName = val;
 
-                const { data: userData, error: userError } = await supabase.auth.getUser();
-                if (userData?.user) {
-                    const userId = userData.user.id;
-                    await supabase
-                        .from('users')
-                        .upsert({ id: userId, name: val }, { onConflict: ['id'] });
-                }
+            if (val.length < 3) {
+                alert('Username must be at least 3 characters long.');
+                return;
+            }
 
-                this.removeNameInput();
-                this.displayWelcomeMessage(val);
-                this.startGame();
+            if (!telegramId) {
+                alert('Telegram authentication failed. Cannot save username.');
+                return;
+            }
+
+            // Check if username already taken by another user
+            const { data: existingUser, error: checkError } = await supabase
+                .from('leaderboard')
+                .select('telegram_id')
+                .eq('player_name', val)
+                .single();
+
+            if (existingUser && existingUser.telegram_id !== telegramId) {
+                alert('Username already taken by another player. Please choose another.');
+                return;
+            }
+
+            // Upsert username linked to Telegram ID
+            const { error: upsertError } = await supabase
+                .from('leaderboard')
+                .upsert({ telegram_id: telegramId, name: val }, { onConflict: ['telegram_id'] });
+
+            if (upsertError) {
+                alert('Error saving username. Please try again.');
+                return;
+            }
+
+            localStorage.setItem('playerName', val);
+            this.playerName = val;
+            this.removeNameInput();
+            this.displayWelcomeMessage(val);
+            this.startGame();
+        };
+
+        goButton.addEventListener('click', saveName);
+        this.nameInputElement.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                saveName();
             }
         });
 
@@ -357,32 +431,9 @@ export default class StartScene extends Phaser.Scene {
 
         // Focus input
         this.nameInputElement.focus();
-
-        // Handle Enter key
-        this.nameInputElement.addEventListener('keydown', async (event) => {
-            if (event.key === 'Enter') {
-                const val = this.nameInputElement.value.trim();
-                if (val.length > 0) {
-                    localStorage.setItem('playerName', val);
-                    this.playerName = val;
-
-                    const { data: userData, error: userError } = await supabase.auth.getUser();
-                    if (userData?.user) {
-                        const userId = userData.user.id;
-                        await supabase
-                            .from('users')
-                            .upsert({ id: userId, name: val }, { onConflict: ['id'] });
-                    }
-
-                    this.removeNameInput();
-                    this.displayWelcomeMessage(val);
-                    this.startGame();
-                }
-            }
-        });
     }
 
-   removeNameInput() {
+    removeNameInput() {
         if (this.nameOverlay) {
             this.nameOverlay.remove();
             this.nameOverlay = null;
@@ -395,53 +446,5 @@ export default class StartScene extends Phaser.Scene {
             this.nameInputElement.remove();
             this.nameInputElement = null;
         }
-    }
-
-
-    async loadPlayerNameFromSupabase() {
-        const { data: userData, error: userError } = await supabase.auth.getUser();
-
-        if (userError || !userData.user) {
-            console.warn('User not logged in, falling back to localStorage');
-            this.useLocalStorageName();
-            return;
-        }
-
-        const userId = userData.user.id;
-
-        const { data, error } = await supabase
-            .from('users')
-            .select('name')
-            .eq('id', userId)
-            .single();
-
-        if (error || !data) {
-            console.warn('No player name found in Supabase, using localStorage');
-            this.useLocalStorageName();
-        } else {
-            this.playerName = data.name;
-            this.displayWelcomeMessage(data.name);
-            this.startGame();
-        }
-    }
-
-    useLocalStorageName() {
-        const name = localStorage.getItem('playerName');
-        if (name) {
-            this.playerName = name;
-            this.displayWelcomeMessage(name);
-            this.startGame();
-        } else {
-            this.createNameInput();
-        }
-    }
-
-    displayWelcomeMessage(name) {
-        this.add.text(10, 7, `WELCOME, ${name}!`, {
-            fontFamily: 'Luckiest Guy',
-            fontSize: '20px',
-            fill: '#ffffff',
-            letterSpacing: '1.2px'
-        }).setDepth(10).setScrollFactor(0).setDepth(60);
     }
 }

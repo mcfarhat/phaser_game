@@ -19,7 +19,7 @@ export const PLAYER_CONFIGS = [
     x: 0.2,
     y: 135,
     frames: 6,
-    unlockedBy: { type: 'score', value: 30 },
+    unlockedBy: { type: 'score', value: 5 },
   },
   {
     key: 'runner3',
@@ -41,7 +41,7 @@ export const PLAYER_CONFIGS = [
     x: 0.2,
     y: 100,
     frames: 8,
-    unlockedBy: { type: 'score', value: 50 },
+    unlockedBy: { type: 'score', value: 10 },
   },
   {
     key: 'runner5',
@@ -52,7 +52,7 @@ export const PLAYER_CONFIGS = [
     x: 0.15,
     y: 120,
     frames: 8,
-    unlockedBy: { type: 'level', value: 5 },
+    unlockedBy: { type: 'level', value: 2 },
   },
   {
     key: 'runner6',
@@ -63,7 +63,7 @@ export const PLAYER_CONFIGS = [
     x: 0.2,
     y: 100,
     frames: 8,
-    unlockedBy: { type: 'score', value: 70 },
+    unlockedBy: { type: 'score', value: 15 },
   },
   {
     key: 'runner7',
@@ -239,7 +239,7 @@ export const LEVEL_CONFIGS = [
   {
     id: 1,
     speed: 4,
-    duration: 180000,  // 3:00
+    duration: 60000,  // 3:00
     powerUpFrequency: 3500,
     hazardFrequency: 4000,
     obstacleFrequency: 5000,
