@@ -1306,8 +1306,14 @@ collectExtraHeart(player, heart) {
     showCharacterSwapOverlay() {
         const { width, height } = this.sys.game.config;
 
+        this.customOverlayBackgroundImage = this.add.image(width / 2, height / 2, 'swap-bg')
+        .setOrigin(0.5, 0.5) // Center the image
+        .setDisplaySize(width, height) // Make it fill the screen
+        .setScrollFactor(0)
+        .setDepth(100);
+
         // The main full-screen overlay rectangle
-        this.overlayRect = this.add.rectangle(0, 0, width, height, 0x000000, 0.9) // Black, 90% opaque
+        this.overlayRect = this.add.rectangle(0, 0, width, height, 0x000000, 0.1)
             .setOrigin(0, 0) // Top-left origin
             .setScrollFactor(0) // Fixed to camera
             .setDepth(100) // Ensure it's on top of game elements
@@ -1574,6 +1580,7 @@ collectExtraHeart(player, heart) {
 
     hideCharacterSwapOverlay() {
         // Destroy all overlay elements
+        this.customOverlayBackgroundImage.destroy();
         this.overlayRect.destroy();
         this.overlayTitle.destroy();
         this.swapDisplayChar.destroy();
