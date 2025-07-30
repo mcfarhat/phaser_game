@@ -239,13 +239,13 @@ updateCaloriesText() {
         // Background
         const bgKey = this.levelConfig.background || 'background1';
 
-this.background = this.add.tileSprite(0, 0, 0, 0, bgKey)
-  .setOrigin(0)
-  .setScrollFactor(0)
-  .setDepth(-1);
+        this.background = this.add.tileSprite(0, 0, 0, 0, bgKey)
+        .setOrigin(0)
+        .setScrollFactor(0)
+        .setDepth(-1);
 
-const bg = this.textures.get(bgKey).getSourceImage();
-this.background.setScale(width / bg.width, height / bg.height);
+        const bg = this.textures.get(bgKey).getSourceImage();
+        this.background.setScale(width / bg.width, height / bg.height);
 
 
         const hudHeight = 40;        // total height of the stats bar
@@ -353,6 +353,20 @@ this.background.setScale(width / bg.width, height / bg.height);
             document.getElementById('pauseOverlay').style.display = 'flex';
             this.togglePause(true);
         });
+
+        this.swapCharacterButton = this.add.image(width - 107, 18, 'swap-icon') // Preload 'swap_icon'
+            .setOrigin(0.5)
+            .setScale(0.04) // Adjust scale
+            .setInteractive({ useHandCursor: true })
+            .setScrollFactor(0)
+            .setDepth(100)
+            .on('pointerdown', () => {
+                if (!this.paused) { // Only allow swap if not already paused
+                    this.togglePause(true);
+
+                    this.showCharacterSwapOverlay(); // Call a new method to handle selection
+                }
+            });
 
         // SETTINGS button
         const settingsBtn = this.add.image(width - 10, 6, 'settings-icon')
@@ -719,41 +733,21 @@ if (this.levelConfig.extraHeartSpawnRange) {
 
     togglePause(pause) {
         this.isPaused = pause;
-    
-        this.physics.world.isPaused = pause;
+
+        this.physics.world.isPaused = pause; // This pauses/resumes all physics bodies automatically
         this.powerUpTimer.paused = pause;
         this.hazardTimer.paused = pause;
         this.motivationTimer.paused = pause;
         if (this.extraHeartTimer && !this.extraHeartTimer.hasDispatched) {
-    this.extraHeartTimer.paused = pause;
-}
+            this.extraHeartTimer.paused = pause;
+        }
 
-
-    
         if (pause) {
             this.runner.anims.pause();
         } else {
             this.runner.anims.resume();
         }
-    
-        this.powerUps.getChildren().forEach(powerUp => {
-            if (pause) {
-                powerUp.originalVelocity = powerUp.body.velocity.x;
-                powerUp.body.setVelocityX(0);
-            } else if (powerUp.originalVelocity !== undefined) {
-                powerUp.body.setVelocityX(powerUp.originalVelocity);
-            }
-        });
-    
-        this.hazards.getChildren().forEach(hazard => {
-            if (pause) {
-                hazard.originalVelocity = hazard.body.velocity.x;
-                hazard.body.setVelocityX(0);
-            } else if (hazard.originalVelocity !== undefined) {
-                hazard.body.setVelocityX(hazard.originalVelocity);
-            }
-        });
-    
+
         this.pauseButton.disableInteractive();
         if (!pause) {
             this.pauseButton.setInteractive({ useHandCursor: true });
@@ -1308,5 +1302,298 @@ collectExtraHeart(player, heart) {
         this.registry.set('calories', 0);
         this.registry.set('distance', 0);
         this.registry.set('lives', 3);
+    }
+
+    showCharacterSwapOverlay() {
+        const { width, height } = this.sys.game.config;
+
+        this.customOverlayBackgroundImage = this.add.image(width / 2, height / 2, 'swap-bg')
+        .setOrigin(0.5, 0.5) // Center the image
+        .setDisplaySize(width, height) // Make it fill the screen
+        .setScrollFactor(0)
+        .setDepth(100);
+
+        // The main full-screen overlay rectangle
+        this.overlayRect = this.add.rectangle(0, 0, width, height, 0x000000, 0.1)
+            .setOrigin(0, 0) // Top-left origin
+            .setScrollFactor(0) // Fixed to camera
+            .setDepth(100) // Ensure it's on top of game elements
+            .setInteractive(); // Blocks input to game underneath
+
+        // Overlay Title
+        this.overlayTitle = this.add.text(width / 2, height * 0.1, 'CHANGE RUNNER', {
+            fontSize: '48px',
+            fill: '#fff',
+            fontFamily: 'Luckiest Guy',
+            stroke: '#729C97',
+            strokeThickness: 6
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(101);
+
+        // Character display
+        this.swapDisplayChar = this.add.sprite(width / 2, height * 0.5, '') // Centered horizontally, middle-ish vertically
+            .setScale(1)
+            .setOrigin(0.5, 1) // Character stands on this Y line
+            .setScrollFactor(0)
+            .setDepth(101);
+
+        // Character Label
+        this.swapCharLabel = this.add.text(width / 2, height * 0.7, '', {
+            fontSize: '32px',
+            fill: '#FFF',
+            fontFamily: 'Luckiest Guy'
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(101);
+
+        // Store the index of the currently playing character
+        const currentPlayerConfig = PLAYER_CONFIGS.find(p => p.key === this.registry.get('selectedCharacter'));
+        this.currentSwapIndex = PLAYER_CONFIGS.indexOf(currentPlayerConfig);
+
+        // Arrows to cycle characters
+        const arrowStyle = { fontSize: '72px', fill: '#729C97', fontFamily: 'Luckiest Guy' };
+        this.swapLeftArrow = this.add.text(width * 0.25, height * 0.45, '<', arrowStyle)
+            .setOrigin(0.5)
+            .setInteractive({ useHandCursor: true })
+            .setScrollFactor(0)
+            .setDepth(101)
+            .on('pointerdown', () => this.cycleSwapCharacter(-1));
+
+        this.swapRightArrow = this.add.text(width * 0.75, height * 0.45, '>', arrowStyle)
+            .setOrigin(0.5)
+            .setInteractive({ useHandCursor: true })
+            .setScrollFactor(0)
+            .setDepth(101)
+            .on('pointerdown', () => this.cycleSwapCharacter(1));
+
+        const makeButton = (x, y, w, h, radius, color, hoverColor, text, textStyle, onClick) => {
+            // 1) Draw the rounded rect
+            const bg = this.add.graphics();
+            bg.fillStyle(color, 1);
+            bg.fillRoundedRect(-w/2, -h/2, w, h, radius);
+
+            // 2) Create the label
+            const label = this.add.text(0, 0, text, textStyle).setOrigin(0.5);
+
+            // 3) Put in a container
+            const btn = this.add.container(x, y, [ bg, label ])
+                .setSize(w, h)
+                .setInteractive({ useHandCursor: true })
+                .setScrollFactor(0)
+                .setDepth(101);
+
+            // 4) Hover effects
+            btn.on('pointerover', () => {
+                // scale up
+                this.tweens.add({
+                    targets: btn,
+                    scaleX: 1.1,
+                    scaleY: 1.1,
+                    duration: 150,
+                    ease: 'Quad.easeOut'
+                });
+                // change bg color
+                bg.clear()
+                .fillStyle(hoverColor, 1)
+                .fillRoundedRect(-w/2, -h/2, w, h, radius);
+            });
+
+            btn.on('pointerout', () => {
+                // scale back
+                this.tweens.add({
+                    targets: btn,
+                    scaleX: 1,
+                    scaleY: 1,
+                    duration: 150,
+                    ease: 'Quad.easeOut'
+                });
+                // restore bg color
+                bg.clear()
+                .fillStyle(color, 1)
+                .fillRoundedRect(-w/2, -h/2, w, h, radius);
+            });
+
+            btn.on('pointerdown', onClick);
+
+            return btn;
+        };
+
+
+    // Confirm Swap
+    this.confirm = makeButton(
+        width/2, height*0.8,
+        240, 60,
+        15,
+        0x4CAF50,     // base color
+        0x388E3C,     // hover color (darker green)
+        'CONFIRM SWAP',
+        {
+            fontSize: '24px',
+            fill: '#fff',
+            fontFamily: 'Luckiest Guy'
+        },
+        () => this.confirmCharacterSwap()
+    );
+
+    // Cancel Swap
+    this.cancel = makeButton(
+        width/2, height*0.9,
+        180, 50,
+        12,
+        0xFF5733,     // base color
+        0xC63D1F,     // hover color (darker orange)
+        'CANCEL',
+        {
+            fontSize: '20px',
+            fill: '#fff',
+            fontFamily: 'Luckiest Guy'
+        },
+        () => this.hideCharacterSwapOverlay()
+    );
+
+
+        // Call displaySwapCharacter to initially populate the character
+        this.displaySwapCharacter(this.currentSwapIndex);
+
+        // Pause the game using your comprehensive togglePause method
+        this.togglePause(true);
+    }
+
+    cycleSwapCharacter(direction) {
+        this.currentSwapIndex = (this.currentSwapIndex + direction + PLAYER_CONFIGS.length) % PLAYER_CONFIGS.length;
+        this.displaySwapCharacter(this.currentSwapIndex);
+    }
+
+    displaySwapCharacter(index) {
+        const cfg = PLAYER_CONFIGS[index];
+        const { width, height } = this.sys.game.config;
+
+        this.swapDisplayChar.setTexture(cfg.key);
+        this.swapDisplayChar.setScale(cfg.scale || 1);
+        this.swapCharLabel.setText(cfg.label);
+        this.swapDisplayChar.y = height * 0.65;
+        this.swapDisplayChar.x = width * (cfg.x + 0.28);
+
+        // Dynamically create/play animation for the preview
+        const animKey = `${cfg.key}_idle_swap`; // Unique key for swap overlay
+        if (!this.anims.get(animKey)) {
+            this.anims.create({
+                key: animKey,
+                frames: this.anims.generateFrameNumbers(cfg.key, {
+                    start: 0,
+                    end: cfg.frames - 1
+                }),
+                frameRate: 8, // Slower for preview
+                repeat: -1
+            });
+        }
+        this.swapDisplayChar.anims.play(animKey, true);
+
+        // Handle locked status for the preview
+        const playerHighScore = parseInt(localStorage.getItem('highScore') || '0');
+        const playerMaxLevel = parseInt(localStorage.getItem('maxLevelReached') || '1');
+        let isLocked = false;
+        let unlockMessage = '';
+
+        if (cfg.unlockedBy && Object.keys(cfg.unlockedBy).length > 0) {
+            if (cfg.unlockedBy.type === 'score') {
+                if (playerHighScore < cfg.unlockedBy.value) {
+                    isLocked = true;
+                    unlockMessage = `REACH ${cfg.unlockedBy.value} SCORE TO UNLOCK`;
+                }
+            } else if (cfg.unlockedBy.type === 'level') {
+                if (playerMaxLevel < cfg.unlockedBy.value) {
+                    isLocked = true;
+                    unlockMessage = `COMPLETE LEVEL ${cfg.unlockedBy.value} TO UNLOCK`;
+                }
+            }
+        }
+
+        // Show lock icon and message on overlay if locked
+        if (isLocked) {
+            this.swapDisplayChar.setTint(0x555555); // Dim the character
+            if (!this.swapPadlockIcon) { // Create if not exists
+                // Position padlock relative to full screen 
+                this.swapPadlockIcon = this.add.image(width / 2, height * 0.45, 'padlock') 
+                    .setScale(0.1)
+                    .setOrigin(0.5)
+                    .setScrollFactor(0)
+                    .setDepth(102); // Higher depth than overlayRect
+            }
+            this.swapPadlockIcon.setVisible(true);
+
+            if (!this.swapUnlockText) { // Create if not exists
+                // Position unlock text relative to full screen 
+                this.swapUnlockText = this.add.text(width / 2, height * 0.7, '', { 
+                    fontSize: '20px', fill: '#FFD700', fontFamily: 'Luckiest Guy', align: 'center', wordWrap: { width: width * 0.8 }
+                }).setOrigin(0.5).setScrollFactor(0).setDepth(102);
+            }
+            this.swapUnlockText.setText(unlockMessage).setVisible(true);
+            this.confirm.setAlpha(0.5).disableInteractive(); // Disable confirm if locked
+        } else {
+            this.swapDisplayChar.clearTint();
+            this.swapPadlockIcon?.setVisible(false); // Hide padlock if it exists
+            this.swapUnlockText?.setVisible(false); // Hide unlock text if it exists
+            this.confirm.setAlpha(1).setInteractive({ useHandCursor: true });
+        }
+    }
+
+    confirmCharacterSwap() {
+        const newCharConfig = PLAYER_CONFIGS[this.currentSwapIndex];
+
+        // 1. Update the selected character in registry
+        this.registry.set('selectedCharacter', newCharConfig.key);
+
+        // 2. Stop current player animation
+        this.runner.anims.stop();
+
+        // 3. Update player sprite texture
+        this.runner.setTexture(newCharConfig.key);
+
+        // 4. Update player scale
+        this.runner.setScale(newCharConfig.scale);
+
+        // 5. Update player hitbox (critical for new character)
+        const fw = newCharConfig.frameWidth;
+        const fh = newCharConfig.frameHeight;
+        const hbW = Math.round(fw * 0.75); // Using your existing hitbox logic
+        const hbH = Math.round(fh * 0.75);
+        const offX = Math.round((fw - hbW) / 2);
+        const offY = Math.round(fh - hbH);
+        this.runner.body.setSize(hbW, hbH);
+        this.runner.body.setOffset(offX, offY);
+
+        // 6. Create and play the new character's running animation
+        const animKey = `${newCharConfig.key}_run`; // Use the unique key for GameScene animation
+        if (!this.anims.get(animKey)) { // Only create if it doesn't exist
+            this.anims.create({
+                key: animKey,
+                frames: this.anims.generateFrameNumbers(newCharConfig.key, {
+                    start: 0,
+                    end: newCharConfig.frames - 1
+                }),
+                frameRate: 10,
+                repeat: -1
+            });
+        }
+        this.runner.anims.play(animKey, true);
+
+        // 7. Hide the overlay and resume game
+        this.hideCharacterSwapOverlay();
+    }
+
+    hideCharacterSwapOverlay() {
+        // Destroy all overlay elements
+        this.customOverlayBackgroundImage.destroy();
+        this.overlayRect.destroy();
+        this.overlayTitle.destroy();
+        this.swapDisplayChar.destroy();
+        this.swapCharLabel.destroy();
+        this.swapLeftArrow.destroy();
+        this.swapRightArrow.destroy();
+        this.confirm.destroy();
+        this.cancel.destroy();
+        this.swapPadlockIcon?.destroy(); // Destroy if it was created
+        this.swapUnlockText?.destroy(); // Destroy if it was created
+
+        // Resume game using your comprehensive togglePause method
+        this.togglePause(false);
     }
 }
