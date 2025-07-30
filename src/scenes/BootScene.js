@@ -62,6 +62,7 @@ export default class BootScene extends Phaser.Scene {
 
         this.load.image('start-bg', 'assets/backgrounds/start-background.jpg');
         this.load.image('char-bg', 'assets/backgrounds/character-selection-bg3.png');
+        this.load.image('swap-bg', 'assets/backgrounds/swap-bg.png');
         this.load.audio('start-sound', 'assets/sounds/music.mp3');
         this.load.audio('click-sound', 'assets/sounds/click.mp3');
 
@@ -79,6 +80,7 @@ export default class BootScene extends Phaser.Scene {
         this.load.image('trophy-icon', 'assets/icons/trophy.svg');
         this.load.image('settings-icon', 'assets/icons/settings.svg');
         this.load.image('pause-icon', 'assets/icons/pause.svg');
+        this.load.image('swap-icon', 'assets/icons/swap.png');
         this.load.image('padlock', 'assets/icons/padlock.png');
         this.load.audio('game-over', 'assets/sounds/game-over.mp3');
         this.load.audio('hit-sound', 'assets/sounds/hit.mp3');
