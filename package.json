@@ -16,10 +16,21 @@
   "author": "Your Name/Team",
   "license": "MIT",
   "devDependencies": {
-    "serve": "^14.0.0"
+    "serve": "^10.0.2"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.50.3",
+    "@supabase/supabase-js": "^2.53.0",
+    "body-parser": "^2.2.0",
+    "crypto": "^1.0.1",
+    "express": "^5.1.0",
     "phaser": "^3.55.2"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mcfarhat/phaser_game.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mcfarhat/phaser_game/issues"
+  },
+  "homepage": "https://github.com/mcfarhat/phaser_game#readme"
 }

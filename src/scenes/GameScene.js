@@ -1,11 +1,12 @@
 import { PLAYER_CONFIGS, powerUpTypes, hazardTypes, obstacleTypes, LEVEL_CONFIGS } from '../config.js';
 import { supabase } from '../supabaseClient.js';
 
-async function submitScore(player_name, score, calories) {
+async function submitScore(telegram_id, display_name, username, score, calories) {
+    // Check if user already exists by telegram_id
     const { data: existing, error: fetchError } = await supabase
         .from('leaderboard')
         .select('*')
-        .eq('player_name', player_name)
+        .eq('telegram_id', telegram_id)
         .single();
 
     if (fetchError && fetchError.code !== 'PGRST116') {
@@ -15,7 +16,9 @@ async function submitScore(player_name, score, calories) {
 
     if (!existing || score > existing.score || calories > existing.calories) {
         console.log("Submitting:", {
-            player_name,
+            telegram_id,
+            display_name,
+            username,
             score: Math.max(score, existing?.score ?? 0),
             calories: Math.max(calories, existing?.calories ?? 0),
             existing
@@ -25,11 +28,13 @@ async function submitScore(player_name, score, calories) {
             .from('leaderboard')
             .upsert([
                 {
-                    player_name,
+                    telegram_id,
+                    display_name,
+                    username,
                     score: Math.max(score, existing?.score ?? 0),
                     calories: Math.max(Math.floor(calories), existing?.calories ?? 0)
                 }
-            ], { onConflict: ['player_name'] });
+            ], { onConflict: ['telegram_id'] });
 
         if (error) {
             console.error('Error updating leaderboard:', error.message);
@@ -71,7 +76,7 @@ export async function fetchAndDisplayLeaderboard() {
     // Fetch leaderboard data
     const { data, error } = await supabase
         .from('leaderboard')
-        .select('*')
+        .select('telegram_id, username, display_name, score, calories')
         .order('score', { ascending: false })
         .order('calories', { ascending: false })
         .limit(5);
@@ -81,7 +86,7 @@ export async function fetchAndDisplayLeaderboard() {
         return;
     }
 
-    data.forEach(({ player_name, score, calories }, index) => {
+    data.forEach(({ telegram_id, username, display_name, score, calories }, index) => {
         const row = document.createElement('div');
         row.style.display = 'flex';
         row.style.justifyContent = 'space-between';
@@ -95,15 +100,15 @@ export async function fetchAndDisplayLeaderboard() {
 
         // Highlight top 3
         if (index === 0) {
-        row.classList.add('sparkle-gold'); 
+            row.classList.add('sparkle-gold'); 
         } else if (index === 1) {
-        row.classList.add('sparkle-silver'); 
+            row.classList.add('sparkle-silver'); 
         } else if (index === 2) {
-        row.classList.add('sparkle-bronze');
+            row.classList.add('sparkle-bronze');
         }
 
         row.innerHTML = `
-            <span style="flex: 2; text-align: left;">${player_name}</span>
+            <span style="flex: 2; text-align: left;">${display_name || username || telegram_id}</span>
             <span style="flex: 1; text-align: left;">${score}</span>
             <span style="flex: 1; text-align: left;">${calories}</span>
         `;
@@ -117,6 +122,7 @@ export async function showLeaderboardUI() {
     document.querySelector('.overlay').style.display = 'block';
     await fetchAndDisplayLeaderboard();
 }
+
 
 function isUnlocked(character, stats) {
   const condition = character.unlockedBy;
@@ -783,35 +789,6 @@ if (this.levelConfig.extraHeartSpawnRange) {
         } else {
             this.runner.anims.resume();
         }
-    
-        this.powerUps.getChildren().forEach(powerUp => {
-            if (pause) {
-                powerUp.originalVelocity = powerUp.body.velocity.x;
-                powerUp.body.setVelocityX(0);
-            } else if (powerUp.originalVelocity !== undefined) {
-                powerUp.body.setVelocityX(powerUp.originalVelocity);
-            }
-        });
-    
-        this.hazards.getChildren().forEach(hazard => {
-            if (pause) {
-                hazard.originalVelocity = hazard.body.velocity.x;
-                hazard.body.setVelocityX(0);
-            } else if (hazard.originalVelocity !== undefined) {
-                hazard.body.setVelocityX(hazard.originalVelocity);
-            }
-        });
-
-        if (this.obstacles) {
-            this.obstacles.getChildren().forEach(obstacle => {
-                if (pause) {
-                    obstacle.originalVelocity = obstacle.body.velocity.x;
-                    obstacle.body.setVelocityX(0);
-                } else if (obstacle.originalVelocity !== undefined) {
-                    obstacle.body.setVelocityX(obstacle.originalVelocity);
-                }
-            });
-        }
 
         this.pauseButton.disableInteractive();
         if (!pause) {
@@ -1009,61 +986,64 @@ spawnExtraHeart() {
             align: 'center'
             }).setOrigin(0.5).setDepth(1000);
 
-        const hint = this.add.text(width / 2, height - 40, 'Click to continue', {
-            fontSize: '18px',
-            fontFamily: 'Luckiest Guy',
-            letterSpacing: 1.5,
-            color: '#ccc'
-        }).setOrigin(0.5).setDepth(1000);
+       // Smaller "Select Character" button
+const buttonWidth = 170;
+const buttonHeight = 40;
 
-        // Create "Select Character" button
-    const buttonBg = this.add.rectangle(width / 2, height / 2 + 220, 260, 60, 0x729C97)
-        .setOrigin(0.5)
-        .setDepth(1000)
-        .setInteractive({ useHandCursor: true });
+const buttonBg = this.add.rectangle(width / 2 - 100, height / 2 + 250, buttonWidth, buttonHeight, 0x729C97)
+    .setOrigin(0.5)
+    .setDepth(1000)
+    .setInteractive({ useHandCursor: true });
 
-    const buttonText = this.add.text(width / 2, height / 2 + 220, 'Select Character', {
-        fontSize: '24px',
-        fontFamily: 'Luckiest Guy',
-        color: '#FFFFFF'
-    }).setOrigin(0.5).setDepth(1001);
+const buttonText = this.add.text(width / 2 - 100, height / 2 + 250, 'Change Character', {
+    fontSize: '18px',
+    fontFamily: 'Luckiest Guy',
+    color: '#FFFFFF'
+}).setOrigin(0.5).setDepth(1001);
 
-    const cleanUpPopup = () => {
-        overlay.destroy();
-        title.destroy();
-        sprite.destroy();
-        message.destroy();
-        hint.destroy();
-        buttonBg.destroy();
-        buttonText.destroy();
-    };
+// Clean up popup
+const cleanUpPopup = () => {
+    overlay.destroy();
+    title.destroy();
+    sprite.destroy();
+    message.destroy();
+    buttonBg.destroy();
+    buttonText.destroy();
+    okButtonBg.destroy();
+    okButtonText.destroy();
+};
 
-    buttonBg.on('pointerdown', () => {
-        cleanUpPopup();
-        this.togglePause(false);
 
-        localStorage.setItem('selectedCharacter', character.key);
+buttonBg.on('pointerdown', () => {
+    cleanUpPopup();
 
-        this.scene.start('CharacterSelectScene', { selectedCharacter: character.key });
-    });
+    const cfg = PLAYER_CONFIGS.find(p => p.key === character.key);
+    if (cfg) {
+        cfg.unlockedBy = {}; // Empty object = no unlock condition
+    }
 
-    this.input.once('pointerdown', (pointer) => {
-        // Avoid double-click conflict with button
-        if (!buttonBg.getBounds().contains(pointer.x, pointer.y)) {
-            cleanUpPopup();
-            this.togglePause(false);
-        }
-    });
+    this.togglePause(true);
+    this.showCharacterSwapOverlay(); // Opens character swap UI
+});
 
-        this.input.once('pointerdown', () => {
-            this.togglePause(false);
-            overlay.destroy();
-            title.destroy();
-            sprite.destroy();
-            message.destroy();
-            hint.destroy();
 
-        }, this);
+// OK Button (to resume game)
+const okButtonBg = this.add.rectangle(width / 2 + 100, height / 2 + 250, buttonWidth, buttonHeight, 0x729C97)
+    .setOrigin(0.5)
+    .setDepth(1000)
+    .setInteractive({ useHandCursor: true });
+
+const okButtonText = this.add.text(width / 2 + 100, height / 2 + 250, 'CLOSE', {
+    fontSize: '18px',
+    fontFamily: 'Luckiest Guy',
+    color: '#FFFFFF'
+}).setOrigin(0.5).setDepth(1001);
+
+okButtonBg.on('pointerdown', () => {
+    cleanUpPopup();
+    this.togglePause(false); // Resume the game
+});
+
     }
 collectExtraHeart(player, heart) {
     if (this.lives < 3) {
@@ -1193,17 +1173,30 @@ collectExtraHeart(player, heart) {
         }).setOrigin(0.5).setResolution(3);
 
         (async () => {
-            const playerName = localStorage.getItem('playerName');
-            await submitScore(playerName, this.score, this.calories);
+    // Get stored user info (adjust keys if you use different naming)
+    const telegram_id = localStorage.getItem('telegram_id');
+    const display_name = localStorage.getItem('display_name'); // or from window.phaserUser?.display_name
+    const username = localStorage.getItem('username');         // or from window.phaserUser?.username
 
-            const currentHighScore = parseInt(localStorage.getItem('highScore') || '0');
-            if (this.score > currentHighScore) {
-                localStorage.setItem('highScore', this.score.toString());
-                console.log(`New High Score: ${this.score}`);
-            }
+    if (!telegram_id) {
+        console.error('User not logged in. Cannot submit score.');
+        return;
+    }
 
-            await showLeaderboardUI();
-        })();
+    // Submit the score with full user info
+    await submitScore(telegram_id, display_name, username, this.score, this.calories);
+
+    // Update local high score if beaten
+    const currentHighScore = parseInt(localStorage.getItem('highScore') || '0');
+    if (this.score > currentHighScore) {
+        localStorage.setItem('highScore', this.score.toString());
+        console.log(`New High Score: ${this.score}`);
+    }
+
+    // Show leaderboard UI
+    await showLeaderboardUI();
+})();
+
         
         // Common button function
         const createButton = (label, x, y, callback) => {
