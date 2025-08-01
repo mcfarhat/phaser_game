@@ -1118,6 +1118,10 @@ collectExtraHeart(player, heart) {
     }
 
     gameOver() {
+    
+        this.allowButtons = false;
+
+
         this.togglePause(true);
          // 🛠 Cancel extra heart timer
     if (this.extraHeartTimer) {
@@ -1194,9 +1198,11 @@ collectExtraHeart(player, heart) {
     }
 
     // Show leaderboard UI
-    await showLeaderboardUI();
+        await showLeaderboardUI(); 
+            this.time.delayedCall(2000, () => {
+            this.allowButtons = true;
+        })
 })();
-
         
         // Common button function
         const createButton = (label, x, y, callback) => {
@@ -1244,6 +1250,7 @@ collectExtraHeart(player, heart) {
             });
 
             button.on('pointerdown', () => {
+                if (!this.allowButtons) return;
                 if (this.clickSound) this.clickSound.play();
                 callback();
             });
