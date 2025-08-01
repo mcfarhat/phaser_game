@@ -127,6 +127,9 @@ export default class GameScene extends Phaser.Scene {
         this.minDistanceBetweenItems = 150;
         this.minYDistanceBetweenItems = 120; 
         this.selectedVoice = null;
+        this.strikeCount = 0;
+        this.scoreMultiplier = 1;
+ 
     }
 
     init(data) {
@@ -171,6 +174,41 @@ export default class GameScene extends Phaser.Scene {
 updateCaloriesText() {
     this.caloriesText.setText('CALORIES: ' + Math.floor(this.calories));
 }
+
+showStrikePopup(multiplier) {
+    const text = `STRIKE x${multiplier}!`;
+    this.strikePopup.setText(text)
+        .setAlpha(1)
+        .setScale(0.2)
+        .setPosition(this.sys.game.config.width / 2, this.sys.game.config.height / 2 - 100);
+
+    this.tweens.add({
+        targets: this.strikePopup,
+        alpha: 0,
+        scale: 1,
+        duration: 1500,
+        ease: 'Power2'
+    });
+}
+showComboBrokenPopup() {
+    this.comboBreakPopup.setText('COMBO BROKEN!')
+        .setAlpha(1)
+        .setScale(0.2)
+        .setPosition(this.sys.game.config.width / 2, this.sys.game.config.height / 2 - 100);
+
+    this.tweens.add({
+        targets: this.comboBreakPopup,
+        alpha: 0,
+        scale: 1,
+        duration: 1200,
+        ease: 'Power2'
+    });
+    this.cameras.main.shake(100, 0.01);
+}
+
+
+
+
 
 
 
@@ -273,6 +311,35 @@ updateCaloriesText() {
             fontFamily: 'Luckiest Guy', 
             letterSpacing: '1.5px',
         };
+   this.strikePopup = this.add.text(
+    this.sys.game.config.width / 2, 
+    this.sys.game.config.height / 2 - 100, 
+    '', 
+    {
+        fontSize: '48px',
+        fill: '#FFD700',
+        fontFamily: 'Luckiest Guy',
+        stroke: '#000',
+        strokeThickness: 6,
+        align: 'center'
+    }
+).setOrigin(0.5).setAlpha(0).setDepth(100);
+this.comboBreakPopup = this.add.text(
+    this.sys.game.config.width / 2,
+    this.sys.game.config.height / 2 - 100,
+    '',
+    {
+        fontSize: '42px',
+        fill: '#FF4444',
+        fontFamily: 'Luckiest Guy',
+        stroke: '#000',
+        strokeThickness: 6,
+        align: 'center'
+    }
+).setOrigin(0.5).setAlpha(0).setDepth(100);
+
+
+
 
         // Score
         this.scoreText = this.add.text(
@@ -833,21 +900,27 @@ spawnExtraHeart() {
         obstacle.body.setSize(60, 40);
         obstacle.body.setOffset(25, 70);
     }
-    collectPowerUp(player, item) {
-        const data = powerUpTypes.find(p => p.key === item.texture.key);
-        if (!data) return;
+collectPowerUp(player, item) {
+    const data = powerUpTypes.find(p => p.key === item.texture.key);
+    if (!data) return;
 
-        this.collectItemSound.setVolume(this.registry.get('soundVolume')).play();
+    this.collectItemSound.setVolume(this.registry.get('soundVolume')).play();
 
-        this.score += data.score;
-        this.calories += data.calories;
+    // STRIKE LOGIC
+    this.strikeCount++;
+this.scoreMultiplier = Math.min(this.strikeCount, 4); // cap at x4
+this.showStrikePopup(this.scoreMultiplier);
 
-        this.scoreText.setText('SCORE: ' + this.score);
-        this.updateCaloriesText();
 
+    this.score += data.score * this.scoreMultiplier;
+    this.calories += data.calories;
 
-        item.destroy();
-    }
+    this.scoreText.setText('SCORE: ' + this.score);
+    this.updateCaloriesText();
+
+    item.destroy();
+}
+
 
     collectHazard(player, item) {
         const data = hazardTypes.find(h => h.key === item.texture.key);
@@ -860,6 +933,12 @@ spawnExtraHeart() {
 
         this.scoreText.setText('SCORE: ' + this.score);
         this.updateCaloriesText();
+
+this.strikeCount = 0;
+this.scoreMultiplier = 1;
+this.showComboBrokenPopup();
+
+
 
 
         item.destroy();
@@ -888,6 +967,12 @@ collectExtraHeart(player, heart) {
 
     hitObstacle(player, obstacle) {
         this.playHitFeedback();
+this.strikeCount = 0;
+this.scoreMultiplier = 1;
+this.showComboBrokenPopup();
+
+
+
 
         obstacle.destroy();
 
