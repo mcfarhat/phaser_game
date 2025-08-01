@@ -1,11 +1,12 @@
 import { PLAYER_CONFIGS, powerUpTypes, hazardTypes, obstacleTypes, LEVEL_CONFIGS } from '../config.js';
 import { supabase } from '../supabaseClient.js';
 
-async function submitScore(player_name, score, calories) {
+async function submitScore(telegram_id, display_name, username, score, calories) {
+    // Check if user already exists by telegram_id
     const { data: existing, error: fetchError } = await supabase
         .from('leaderboard')
         .select('*')
-        .eq('player_name', player_name)
+        .eq('telegram_id', telegram_id)
         .single();
 
     if (fetchError && fetchError.code !== 'PGRST116') {
@@ -15,7 +16,9 @@ async function submitScore(player_name, score, calories) {
 
     if (!existing || score > existing.score || calories > existing.calories) {
         console.log("Submitting:", {
-            player_name,
+            telegram_id,
+            display_name,
+            username,
             score: Math.max(score, existing?.score ?? 0),
             calories: Math.max(calories, existing?.calories ?? 0),
             existing
@@ -25,11 +28,13 @@ async function submitScore(player_name, score, calories) {
             .from('leaderboard')
             .upsert([
                 {
-                    player_name,
+                    telegram_id,
+                    display_name,
+                    username,
                     score: Math.max(score, existing?.score ?? 0),
-                    calories: Math.max(calories, existing?.calories ?? 0)
+                    calories: Math.max(Math.floor(calories), existing?.calories ?? 0)
                 }
-            ], { onConflict: ['player_name'] });
+            ], { onConflict: ['telegram_id'] });
 
         if (error) {
             console.error('Error updating leaderboard:', error.message);
@@ -71,7 +76,7 @@ export async function fetchAndDisplayLeaderboard() {
     // Fetch leaderboard data
     const { data, error } = await supabase
         .from('leaderboard')
-        .select('*')
+        .select('telegram_id, username, display_name, score, calories')
         .order('score', { ascending: false })
         .order('calories', { ascending: false })
         .limit(5);
@@ -81,7 +86,7 @@ export async function fetchAndDisplayLeaderboard() {
         return;
     }
 
-    data.forEach(({ player_name, score, calories }, index) => {
+    data.forEach(({ telegram_id, username, display_name, score, calories }, index) => {
         const row = document.createElement('div');
         row.style.display = 'flex';
         row.style.justifyContent = 'space-between';
@@ -95,15 +100,15 @@ export async function fetchAndDisplayLeaderboard() {
 
         // Highlight top 3
         if (index === 0) {
-        row.classList.add('sparkle-gold'); 
+            row.classList.add('sparkle-gold'); 
         } else if (index === 1) {
-        row.classList.add('sparkle-silver'); 
+            row.classList.add('sparkle-silver'); 
         } else if (index === 2) {
-        row.classList.add('sparkle-bronze');
+            row.classList.add('sparkle-bronze');
         }
 
         row.innerHTML = `
-            <span style="flex: 2; text-align: left;">${player_name}</span>
+            <span style="flex: 2; text-align: left;">${display_name || username || telegram_id}</span>
             <span style="flex: 1; text-align: left;">${score}</span>
             <span style="flex: 1; text-align: left;">${calories}</span>
         `;
@@ -116,6 +121,47 @@ export async function showLeaderboardUI() {
     document.getElementById('leaderboard-container').style.display = 'flex';
     document.querySelector('.overlay').style.display = 'block';
     await fetchAndDisplayLeaderboard();
+}
+
+
+function isUnlocked(character, stats) {
+  const condition = character.unlockedBy;
+  if (!condition || Object.keys(condition).length === 0) return true;
+  if (condition.type === 'score') return stats.highScore >= condition.value;
+  if (condition.type === 'level') return stats.levelReached >= condition.value;
+  return false;
+}
+
+function alreadyUnlocked(key) {
+  const unlocked = JSON.parse(localStorage.getItem('unlockedCharacters') || '[]');
+  return unlocked.includes(key);
+}
+
+function markAsUnlocked(key) {
+  const unlocked = JSON.parse(localStorage.getItem('unlockedCharacters') || '[]');
+  if (!unlocked.includes(key)) {
+    unlocked.push(key);
+    localStorage.setItem('unlockedCharacters', JSON.stringify(unlocked));
+  }
+}
+
+function checkAndUnlockCharacters(score, level, showPopupCallback) {
+  const playerStats = {
+    highScore: score,
+    levelReached: level
+  };
+
+  PLAYER_CONFIGS.forEach(character => {
+    if (!character.unlockedBy || Object.keys(character.unlockedBy).length === 0) {
+      return;
+    }
+    if (isUnlocked(character, playerStats) && !alreadyUnlocked(character.key)) {
+      markAsUnlocked(character.key);
+      if (typeof showPopupCallback === 'function') {
+        showPopupCallback(character);
+      }
+    }
+  });
 }
 
 
@@ -137,6 +183,7 @@ export default class GameScene extends Phaser.Scene {
         this.playerName = data.playerName;
         this.levelId = data.levelId || 1; // ✅ Move this up first
         this.levelConfig = LEVEL_CONFIGS.find(l => l.id === this.levelId); // now safe
+          this.registry.set('level', this.levelId);
         this.calorieBurnPerSecond = this.levelConfig.calorieBurnPerSecond || 0;
         this.calorieBurnPerJump = this.levelConfig.calorieBurnPerJump || 0;
 
@@ -160,20 +207,10 @@ export default class GameScene extends Phaser.Scene {
 
     
     preload() {
-    this.load.image('heart', 'assets/icons/heart.svg');
-    
-  // Dynamically load backgrounds from 1 to 10
-  for (let i = 1; i <= 10; i++) {
-    this.load.image(`background${i}`, `assets/backgrounds/background${i}.png`);
-  }
-
-}
-updateCaloriesText() {
-    this.caloriesText.setText('CALORIES: ' + Math.floor(this.calories));
-}
-
-
-
+    }
+    updateCaloriesText() {
+        this.caloriesText.setText('CALORIES: ' + Math.floor(this.calories));
+    }
 
     create() {
         const { width, height } = this.sys.game.config;
@@ -645,6 +682,13 @@ if (this.levelConfig.extraHeartSpawnRange) {
         if (this.shouldStartTimer) {
             this.time.delayedCall(0, () => this.startTimer());
         }
+
+        checkAndUnlockCharacters(
+            this.score,
+            this.registry.get('level') || 1,
+            (character) => this.showCharacterUnlockPopup(character)
+        );
+
     }
 
     update(time, delta) {
@@ -703,8 +747,6 @@ if (this.levelConfig.extraHeartSpawnRange) {
       
     }
 }
-
-
         // ✅ Cleanup
         this.powerUps.getChildren().forEach(item => {
             if (item.x < -item.width) item.destroy();
@@ -843,6 +885,11 @@ spawnExtraHeart() {
         this.calories += data.calories;
 
         this.scoreText.setText('SCORE: ' + this.score);
+        checkAndUnlockCharacters(
+            this.score,
+            this.registry.get('level') || 1,
+            (character) => this.showCharacterUnlockPopup(character)
+        );
         this.updateCaloriesText();
 
 
@@ -859,10 +906,144 @@ spawnExtraHeart() {
         this.calories += data.calories;
 
         this.scoreText.setText('SCORE: ' + this.score);
+        checkAndUnlockCharacters(
+            this.score,
+            this.registry.get('level') || 1,
+            (character) => this.showCharacterUnlockPopup(character)
+        );
         this.updateCaloriesText();
 
 
         item.destroy();
+    }
+    
+    showCharacterUnlockPopup(character) {
+
+        this.togglePause(true);
+        // Play sound
+        this.sound.play('new-character', {
+            volume: this.registry.get('soundVolume')
+        });
+
+        const reason = character.unlockedBy;
+        const { width, height } = this.sys.game.canvas;
+
+        const overlay = this.add.rectangle(0, 0, width, height, 0x000000, 0.7)
+            .setOrigin(0)
+            .setDepth(999);
+
+        const title = this.add.text(width / 2, 100, 'Character Unlocked', {
+            fontSize: '42px',
+            fontFamily: 'Luckiest Guy',
+            color: '#E0F7FA',
+            stroke: '#729C97',
+            strokeThickness: 8,
+            shadow: {
+                offsetX: 1,
+                offsetY: 1,
+                color: '#000',
+                blur: 8,
+                stroke: true,
+                fill: true
+            }
+        }).setOrigin(0.5).setDepth(1000);
+
+            this.tweens.add({
+                targets: title,
+                scale: { from: 1.1, to: 1.2 },
+                duration: 1500,
+                yoyo: true,
+                repeat: -1,
+                ease: 'Sine.easeInOut'
+            });
+
+        const sprite = this.add.sprite(width / 2 - 40, height / 2 - 30, character.key)
+            .setOrigin(0.5)
+            .setScale(character.scale)
+            .setDepth(1000);
+
+        if (!this.anims.exists(`${character.key}_run`)) {
+            this.anims.create({
+            key: `${character.key}_run`,
+            frames: this.anims.generateFrameNumbers(character.key, { start: 0, end: character.frames - 1 }),
+            frameRate: 10,
+            repeat: -1
+            });
+        }
+   
+        sprite.play(`${character.key}_run`);
+
+        const reasonText = reason.type === 'score'
+            ? `You reached a score of ${reason.value}`
+            : `You reached level ${reason.value}`;
+
+        const message = this.add.text(width / 2, height / 2 + 140,
+            `${character.key.toUpperCase()} is now available!\n${reasonText}`, {
+            fontSize: '25px',
+            fontFamily: 'Luckiest Guy',
+            color: '#729C97',
+            letterSpacing: 1.5,
+            align: 'center'
+            }).setOrigin(0.5).setDepth(1000);
+
+       // Smaller "Select Character" button
+const buttonWidth = 170;
+const buttonHeight = 40;
+
+const buttonBg = this.add.rectangle(width / 2 - 100, height / 2 + 250, buttonWidth, buttonHeight, 0x729C97)
+    .setOrigin(0.5)
+    .setDepth(1000)
+    .setInteractive({ useHandCursor: true });
+
+const buttonText = this.add.text(width / 2 - 100, height / 2 + 250, 'Change Character', {
+    fontSize: '18px',
+    fontFamily: 'Luckiest Guy',
+    color: '#FFFFFF'
+}).setOrigin(0.5).setDepth(1001);
+
+// Clean up popup
+const cleanUpPopup = () => {
+    overlay.destroy();
+    title.destroy();
+    sprite.destroy();
+    message.destroy();
+    buttonBg.destroy();
+    buttonText.destroy();
+    okButtonBg.destroy();
+    okButtonText.destroy();
+};
+
+
+buttonBg.on('pointerdown', () => {
+    cleanUpPopup();
+
+    const cfg = PLAYER_CONFIGS.find(p => p.key === character.key);
+    if (cfg) {
+        cfg.unlockedBy = {}; // Empty object = no unlock condition
+    }
+
+    this.togglePause(true);
+    this.showCharacterSwapOverlay(); // Opens character swap UI
+});
+
+
+// OK Button (to resume game)
+const okButtonBg = this.add.rectangle(width / 2 + 100, height / 2 + 250, buttonWidth, buttonHeight, 0x729C97)
+    .setOrigin(0.5)
+    .setDepth(1000)
+    .setInteractive({ useHandCursor: true });
+
+const okButtonText = this.add.text(width / 2 + 100, height / 2 + 250, 'CLOSE', {
+    fontSize: '18px',
+    fontFamily: 'Luckiest Guy',
+    color: '#FFFFFF'
+}).setOrigin(0.5).setDepth(1001);
+
+okButtonBg.on('pointerdown', () => {
+    cleanUpPopup();
+    this.togglePause(false); // Resume the game
+});
+
     }
 collectExtraHeart(player, heart) {
     if (this.lives < 3) {
@@ -980,11 +1161,11 @@ collectExtraHeart(player, heart) {
 
         // GAME OVER Text
         const gameOverText = this.add.text(width / 2, height * 0.35, 'GAME OVER', {
-            fontSize: '48px',
-            fill: '#fff',
+            fontSize: '52px',
             fontFamily: 'Luckiest Guy',
+            color: '#E0F7FA',
             stroke: '#729C97',
-            strokeThickness: 6,
+            strokeThickness: 8,
             shadow: {
                 offsetX: 1,
                 offsetY: 1,
@@ -995,26 +1176,33 @@ collectExtraHeart(player, heart) {
             }
         }).setOrigin(0.5).setResolution(3);
 
-        this.time.delayedCall(200, async () => {
-            const playerName = localStorage.getItem('playerName');
-            await submitScore(playerName, this.score, this.calories);
+        (async () => {
+    // Get stored user info (adjust keys if you use different naming)
+    const telegram_id = localStorage.getItem('telegram_id');
+    const display_name = localStorage.getItem('display_name'); // or from window.phaserUser?.display_name
+    const username = localStorage.getItem('username');         // or from window.phaserUser?.username
 
-            // Existing high score from localStorage (or 0 if none)
-            const currentHighScore = parseInt(localStorage.getItem('highScore') || '0');
-            // Check if current game's score is higher than the saved high score
-            if (this.score > currentHighScore) {
-                localStorage.setItem('highScore', this.score.toString());
-                console.log(`New High Score: ${this.score}`); // For debugging
-            }
+    if (!telegram_id) {
+        console.error('User not logged in. Cannot submit score.');
+        return;
+    }
 
-            await showLeaderboardUI(); 
+    // Submit the score with full user info
+    await submitScore(telegram_id, display_name, username, this.score, this.calories);
+
+    // Update local high score if beaten
+    const currentHighScore = parseInt(localStorage.getItem('highScore') || '0');
+    if (this.score > currentHighScore) {
+        localStorage.setItem('highScore', this.score.toString());
+        console.log(`New High Score: ${this.score}`);
+    }
+
+    // Show leaderboard UI
+        await showLeaderboardUI(); 
             this.time.delayedCall(2000, () => {
-    this.allowButtons = true;
-});
-            
-
-
-        });
+            this.allowButtons = true;
+        })
+})();
         
         // Common button function
         const createButton = (label, x, y, callback) => {
@@ -1079,7 +1267,7 @@ collectExtraHeart(player, heart) {
         };
 
         // Restart Button
-        createButton('RESTART', width / 2 - 70, height * 0.55, () => {
+        createButton('RESTART', width / 2 - 70, height * 0.50, () => {
             if (this.clickSound) this.clickSound.play();
 
             // 🔄 Reset all stats
@@ -1096,7 +1284,7 @@ collectExtraHeart(player, heart) {
 
 
         // Home Button
-        createButton('HOME', width / 2 + 70, height * 0.55, () => {
+        createButton('HOME', width / 2 + 70, height * 0.50, () => {
             this.registry.remove('selectedCharacter');
             this.resetStats();
             this.scene.stop();
@@ -1284,6 +1472,11 @@ collectExtraHeart(player, heart) {
         if (this.clickSound) this.clickSound.play();
 
         const nextLevelId = (this.levelId || 1) + 1;
+
+        const previousMax = parseInt(localStorage.getItem('maxLevelReached') || '1', 10);
+        if (nextLevelId > previousMax) {
+            localStorage.setItem('maxLevelReached', nextLevelId);
+        }
 
         this.scene.start('GameScene', {
             selectedCharacter: this.selectedCharacter,

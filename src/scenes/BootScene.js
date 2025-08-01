@@ -48,8 +48,6 @@ export default class BootScene extends Phaser.Scene {
 
         const obstacleTypes = ['dumbell', 'gym-bench', 'gym-plates', 'jump-rope', 'kettlebell', 'rock', 'tire-stack'];
 
-        this.load.image('background', 'assets/background.jpg');
-
         fruitTypes.forEach(healthy => {
             this.load.image(healthy, `assets/collectibles/${healthy}.png`);
         });
@@ -62,7 +60,7 @@ export default class BootScene extends Phaser.Scene {
             this.load.image(obstacle, `assets/obstacles/${obstacle}.png`);
         });
 
-        this.load.image('start-bg', 'assets/start-background.jpg');
+        this.load.image('start-bg', 'assets/backgrounds/start-background.jpg');
         this.load.image('char-bg', 'assets/backgrounds/character-selection-bg3.png');
         this.load.image('swap-bg', 'assets/backgrounds/swap-bg.png');
         this.load.audio('start-sound', 'assets/sounds/music.mp3');
@@ -78,7 +76,6 @@ export default class BootScene extends Phaser.Scene {
         });
 
         this.load.image('heart', 'assets/icons/heart.svg');
-        this.load.image('medal', 'assest/icons/medals.svg');
         this.load.image('trophy-icon', 'assets/icons/trophy.svg');
         this.load.image('settings-icon', 'assets/icons/settings.svg');
         this.load.image('pause-icon', 'assets/icons/pause.svg');
@@ -88,6 +85,11 @@ export default class BootScene extends Phaser.Scene {
         this.load.audio('hit-sound', 'assets/sounds/hit.mp3');
         this.load.audio('level-complete', 'assets/sounds/level-complete.mp3');
         this.load.audio('collect-item', 'assets/sounds/collect.mp3');
+        this.load.audio('new-character', 'assets/sounds/new-character.mp3');
+
+        for (let i = 1; i <= 10; i++) {
+            this.load.image(`background${i}`, `assets/backgrounds/background${i}.png`);
+        }
     }
 
     create() {

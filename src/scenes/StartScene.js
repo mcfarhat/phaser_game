@@ -8,7 +8,9 @@ export default class StartScene extends Phaser.Scene {
     }
 
     init(data) {
-        this.playerName = data.playerName;
+        this.selectedCharacter = data.selectedCharacter;
+          this.telegramUser = data.telegramUser;
+          this.playerName = this.telegramUser?.display_name || this.telegramUser?.first_name; 
         this.startTimer = data.startTimer;
     }
 
@@ -188,8 +190,12 @@ export default class StartScene extends Phaser.Scene {
 
         this.startButton.on('pointerdown', () => {
             playClickSound();
-            this.scene.start('CharacterSelectScene', {
+            this.scene.start('GameScene', {
+                 
+                selectedCharacter: this.selectedCharacter,
+                 levelId: 1,
                 playerName: this.playerName,
+                startTimer: true
             });
         });
 
@@ -218,6 +224,14 @@ export default class StartScene extends Phaser.Scene {
         .setOrigin(0, 0)
         .setScrollFactor(0)
         .setDepth(50);
+
+        if (window.phaserUser) {
+            console.log('Telegram User found:', window.phaserUser);
+            this.playerName = window.phaserUser.display_name || window.phaserUser.first_name;
+
+            this.displayWelcomeMessage(this.playerName);
+            this.startGame();
+        }
     }
 
     createTitleText() {
@@ -245,143 +259,7 @@ export default class StartScene extends Phaser.Scene {
     startGame() {
         this.startButton.setInteractive();
     }
-
-    createNameInput() {
-        const width = this.sys.game.config.width;
-        const height = this.sys.game.config.height;
-
-        // Overlay (same as settings)
-        this.nameOverlay = document.createElement('div');
-        this.nameOverlay.className = 'overlay';
-        this.nameOverlay.style.display = 'block';
-        this.nameOverlay.style.zIndex = 999;
-        document.body.appendChild(this.nameOverlay);
-
-        // Panel container
-        this.namePanel = document.createElement('div');
-        this.namePanel.className = 'panel';
-        this.namePanel.style.display = 'flex';
-        this.namePanel.style.flexDirection = 'column';
-        this.namePanel.style.alignItems = 'center';
-        this.namePanel.style.justifyContent = 'center';
-        this.namePanel.style.padding = '40px 20px 20px 20px';
-        this.namePanel.style.gap = '10px';
-        this.namePanel.style.zIndex = 1000;
-        this.namePanel.style.width = '260px';
-        this.namePanel.style.height = '130px';
-        this.namePanel.style.borderRadius = '15px';
-        this.namePanel.style.boxShadow = '0 6px 16px rgba(0, 0, 0, 0.3)';
-        this.namePanel.style.position = 'absolute';
-        this.namePanel.style.left = '50%';
-        this.namePanel.style.top = '45%';
-        this.namePanel.style.transform = 'translate(-50%, -50%)';
-
-        // Prompt
-        const prompt = document.createElement('p');
-        prompt.textContent = 'ENTER YOUR NICKNAME:';
-        prompt.style.fontSize = '20px';
-        prompt.style.fontFamily = 'Luckiest Guy';
-        prompt.style.color = '#7AAFBA';
-        prompt.style.margin = '0';
-
-        // Input field
-        const inputWidth = 210;
-        const inputHeight = 25;
-
-        this.nameInputElement = document.createElement('input');
-        this.nameInputElement.type = 'text';
-        this.nameInputElement.placeholder = 'YOUR NICKNAME';
-        this.nameInputElement.style.width = `${inputWidth}px`;
-        this.nameInputElement.style.height = `${inputHeight}px`;
-        this.nameInputElement.style.fontSize = '18px';
-        this.nameInputElement.style.color = '#7AAFBA';
-        this.nameInputElement.style.padding = '8px 12px';
-        this.nameInputElement.style.borderRadius = '8px';
-        this.nameInputElement.style.boxShadow = '0 4px 10px rgba(0,0,0,0.25)';
-        this.nameInputElement.style.fontFamily = 'Luckiest Guy';
-        this.nameInputElement.style.backgroundColor = '#FFF';
-        this.nameInputElement.className = 'name-input';
-
-        const style = document.createElement('style');
-        style.textContent = `
-        .name-input::placeholder {
-            color:rgb(211, 239, 242);
-            font-family: 'Luckiest Guy';
-            font-size: 15px;
-            letter-spacing: 0.5px;
-        }
-        `;
-        document.head.appendChild(style);
-
-        // GO button
-        const goButton = document.createElement('button');
-        goButton.textContent = 'GO';
-        goButton.style.backgroundColor = '#7AAFBA';
-        goButton.style.color = '#fff';
-        goButton.style.fontSize = '18px';
-        goButton.style.padding = '8px 24px';
-        goButton.style.border = 'none';
-        goButton.style.borderRadius = '30px';
-        goButton.style.cursor = 'pointer';
-        goButton.style.fontFamily = 'Luckiest Guy';
-        goButton.style.boxShadow = '0 4px 10px rgba(0,0,0,0.3)';
-        goButton.style.transition = 'transform 0.1s ease';
-        goButton.style.letterSpacing = '1px';
-        goButton.style.marginTop = '15px';
-
-        goButton.addEventListener('click', async () => {
-            const val = this.nameInputElement.value.trim();
-            if (val.length > 0) {
-                localStorage.setItem('playerName', val);
-                this.playerName = val;
-
-                const { data: userData, error: userError } = await supabase.auth.getUser();
-                if (userData?.user) {
-                    const userId = userData.user.id;
-                    await supabase
-                        .from('users')
-                        .upsert({ id: userId, name: val }, { onConflict: ['id'] });
-                }
-
-                this.removeNameInput();
-                this.displayWelcomeMessage(val);
-                this.startGame();
-            }
-        });
-
-        // Add elements to panel
-        this.namePanel.appendChild(prompt);
-        this.namePanel.appendChild(this.nameInputElement);
-        this.namePanel.appendChild(goButton);
-        document.body.appendChild(this.namePanel);
-
-        // Focus input
-        this.nameInputElement.focus();
-
-        // Handle Enter key
-        this.nameInputElement.addEventListener('keydown', async (event) => {
-            if (event.key === 'Enter') {
-                const val = this.nameInputElement.value.trim();
-                if (val.length > 0) {
-                    localStorage.setItem('playerName', val);
-                    this.playerName = val;
-
-                    const { data: userData, error: userError } = await supabase.auth.getUser();
-                    if (userData?.user) {
-                        const userId = userData.user.id;
-                        await supabase
-                            .from('users')
-                            .upsert({ id: userId, name: val }, { onConflict: ['id'] });
-                    }
-
-                    this.removeNameInput();
-                    this.displayWelcomeMessage(val);
-                    this.startGame();
-                }
-            }
-        });
-    }
-
+    
    removeNameInput() {
         if (this.nameOverlay) {
             this.nameOverlay.remove();
@@ -432,7 +310,7 @@ export default class StartScene extends Phaser.Scene {
             this.displayWelcomeMessage(name);
             this.startGame();
         } else {
-            this.createNameInput();
+            // this.createNameInput();
         }
     }
 

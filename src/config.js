@@ -249,7 +249,7 @@ export const LEVEL_CONFIGS = [
     calorieBurnPerSecond: 1.0,
     calorieBurnPerJump: 5,
     extraHeartSpawnRange: [60000, 70000]
- 
+    
   },
   {
     id: 2,
@@ -264,7 +264,6 @@ export const LEVEL_CONFIGS = [
     calorieBurnPerSecond: 1.5,
     calorieBurnPerJump: 5,
     extraHeartSpawnRange: [70000, 80000]
-  
   },
   {
     id: 3,
@@ -279,8 +278,6 @@ export const LEVEL_CONFIGS = [
     calorieBurnPerSecond: 2.0,
     calorieBurnPerJump: 5,
     extraHeartSpawnRange: [60000, 80000]
-
-
   },
   {
     id: 4,
@@ -295,7 +292,6 @@ export const LEVEL_CONFIGS = [
     calorieBurnPerSecond: 2.5,
     calorieBurnPerJump: 5,
     extraHeartSpawnRange: [60000, 90000]
-    
   },
   {
     id: 5,
@@ -310,7 +306,6 @@ export const LEVEL_CONFIGS = [
     calorieBurnPerSecond: 3.0,
     calorieBurnPerJump: 5,
     extraHeartSpawnRange: [80000, 90000]
- 
   },
   {
     id: 6,
@@ -325,7 +320,6 @@ export const LEVEL_CONFIGS = [
     calorieBurnPerSecond: 3.5,
     calorieBurnPerJump: 5,
     extraHeartSpawnRange: [90000, 150000]
-  
   },
   {
     id: 7,
@@ -340,7 +334,6 @@ export const LEVEL_CONFIGS = [
     calorieBurnPerSecond: 4.0,
     calorieBurnPerJump: 5,
     extraHeartSpawnRange: [90000, 170000]
- 
   },
   {
     id: 8,
@@ -355,7 +348,6 @@ export const LEVEL_CONFIGS = [
     calorieBurnPerSecond: 4.5,
     calorieBurnPerJump: 5,
     extraHeartSpawnRange: [10000, 160000]
- 
   },
   {
     id: 9,
@@ -369,8 +361,7 @@ export const LEVEL_CONFIGS = [
     background: 'background9',
     calorieBurnPerSecond: 5.0,
     calorieBurnPerJump: 5,
-   extraHeartSpawnRange: [90000, 100000]
-
+     extraHeartSpawnRange: [90000, 100000]
   },
   {
     id: 10,
@@ -384,7 +375,7 @@ export const LEVEL_CONFIGS = [
     background: 'background10',
     calorieBurnPerSecond: 5.5,
     calorieBurnPerJump: 5,
-   extraHeartSpawnRange: [90000, 100000]
+      extraHeartSpawnRange: [90000, 100000]
 
   }
 ];
